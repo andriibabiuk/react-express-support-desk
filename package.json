@@ -1,0 +1,12 @@
+{
+	"name": "react-express-support-desk",
+	"private": true,
+	"workspaces": [
+		"client",
+		"server"
+	],
+	"scripts": {
+		"dev": "bun run --filter '*' --parallel dev",
+		"build": "bun run --filter '*' build"
+	}
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun --version)",
+      "Bash(bun init *)",
+      "Bash(bun add *)",
+      "Bash(timeout 5 bun run index.ts)",
+      "Bash(bun create *)",
+      "Bash(bun install *)",
+      "Bash(bunx tsc *)",
+      "Bash(bun run *)",
+      "Bash(curl -s http://localhost:4000/api/health)",
+      "Bash(curl -s http://localhost:5173/ -o /dev/null -w \"client status: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:5173/api/health)",
+      "Bash(curl -s http://localhost:4000/api/health -w \"\\\\nserver code: %{http_code}\\\\n\")",
+      "Bash(taskkill //F //IM bun.exe)"
+    ]
+  }
+}
