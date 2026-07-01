@@ -9,5 +9,16 @@ export const auth = betterAuth({
 	}),
 	emailAndPassword: {
 		enabled: true,
+		disableSignUp: true,
+	},
+	user: {
+		additionalFields: {
+			role: {
+				type: ['admin', 'agent'],
+				input: false,
+				required: true,
+				defaultValue: 'agent',
+			},
+		},
 	},
 });

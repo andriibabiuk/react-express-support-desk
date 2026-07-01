@@ -7,7 +7,8 @@
     "dev": "bun --watch index.ts",
     "start": "bun index.ts",
     "postinstall": "prisma generate",
-    "migrate": "prisma migrate dev"
+    "migrate": "prisma migrate dev",
+    "seed": "bun run prisma/seed.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
