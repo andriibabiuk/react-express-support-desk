@@ -13,7 +13,22 @@
       "Bash(curl -s http://localhost:5173/ -o /dev/null -w \"client status: %{http_code}\\\\n\")",
       "Bash(curl -s http://localhost:5173/api/health)",
       "Bash(curl -s http://localhost:4000/api/health -w \"\\\\nserver code: %{http_code}\\\\n\")",
-      "Bash(taskkill //F //IM bun.exe)"
+      "Bash(taskkill //F //IM bun.exe)",
+      "Bash(psql --version)",
+      "Bash(docker --version)",
+      "Bash(pg_isready)",
+      "Bash(sc query *)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(export PGPASSWORD=postgres)",
+      "Bash(psql -U postgres -h localhost -c \"\\\\l\")",
+      "Bash(env)",
+      "Bash(psql -U postgres -h 127.0.0.1 -p 5432 -c \"\\\\l\")",
+      "Bash(export PGPASSWORD='qqwwee112233')",
+      "Bash(psql -U postgres -h 127.0.0.1 -p 5432 -c \"CREATE DATABASE supportdesk;\")",
+      "Bash(bunx prisma *)",
+      "Bash(curl -s http://localhost:4000/api/health -w \"\\\\nstatus: %{http_code}\\\\n\")",
+      "Bash(wait)"
     ]
   }
 }
