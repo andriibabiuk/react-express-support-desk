@@ -8,5 +8,9 @@
 	"scripts": {
 		"dev": "bun run --filter '*' --parallel dev",
 		"build": "bun run --filter '*' build"
+	},
+	"overrides": {
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
 	}
 }

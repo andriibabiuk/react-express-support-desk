@@ -4,6 +4,7 @@ import { prisma } from './prisma.ts';
 
 export const auth = betterAuth({
 	basePath: '/api/auth',
+	trustedOrigins: [process.env.CLIENT_URL!],
 	database: prismaAdapter(prisma, {
 		provider: 'postgresql',
 	}),

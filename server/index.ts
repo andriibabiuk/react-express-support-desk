@@ -6,7 +6,6 @@ import { requireAuth } from './src/middleware/require-auth.ts';
 
 const app = express();
 const port = process.env.PORT ?? 4000;
-
 app.all('/api/auth/{*any}', (req, res, next) =>
 	toNodeHandler(auth)(req, res).catch(next),
 );
