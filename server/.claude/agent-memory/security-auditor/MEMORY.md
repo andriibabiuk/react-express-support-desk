@@ -1,0 +1,2 @@
+- [Auth architecture (verified)](auth_architecture.md) — better-auth config confirmed safe on role-escalation/mount-order; notes the /api/me token-leak finding
+- [AdminRoute forward risk](admin_route_forward_risk.md) — client-only admin guard, no backing API yet; check future admin routes for server-side role checks
