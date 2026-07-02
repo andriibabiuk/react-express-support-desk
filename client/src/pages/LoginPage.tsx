@@ -1,9 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { authClient, useAuth } from '../lib/auth-client';
+import { Button } from '@/components/ui/button';
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 
 const loginSchema = z.object({
 	email: z.email('Enter a valid email address'),
@@ -16,12 +26,13 @@ export function LoginPage() {
 	const navigate = useNavigate();
 	const { data: session, isPending } = useAuth();
 	const {
-		register,
+		control,
 		handleSubmit,
 		setError,
 		formState: { errors, isSubmitting },
 	} = useForm<LoginFormValues>({
 		resolver: zodResolver(loginSchema),
+		defaultValues: { email: '', password: '' },
 	});
 
 	useEffect(() => {
@@ -39,59 +50,63 @@ export function LoginPage() {
 
 	return (
 		<main className='flex flex-1 items-center justify-center p-6'>
-			<form
-				onSubmit={onSubmit}
-				noValidate
-				className='w-full max-w-sm rounded-lg border border-(--border) p-8 text-left'
-			>
-				<h1 className='mb-6 text-center text-2xl font-semibold tracking-normal text-(--text-h)'>
-					Sign in
-				</h1>
+			<Card className='w-full max-w-sm'>
+				<CardHeader>
+					<CardTitle className='text-2xl'>Sign in</CardTitle>
+					<CardDescription>Enter your email and password to continue</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<form onSubmit={onSubmit} noValidate>
+						<FieldGroup>
+							<Controller
+								name='email'
+								control={control}
+								render={({ field, fieldState }) => (
+									<Field data-invalid={fieldState.invalid}>
+										<FieldLabel htmlFor={field.name}>Email</FieldLabel>
+										<Input
+											{...field}
+											id={field.name}
+											type='email'
+											autoComplete='email'
+											aria-invalid={fieldState.invalid}
+										/>
+										{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+									</Field>
+								)}
+							/>
 
-				<label htmlFor='email' className='mb-1 block text-sm'>
-					Email
-				</label>
-				<input
-					id='email'
-					type='email'
-					autoComplete='email'
-					{...register('email')}
-					className={`w-full rounded-md border px-3 py-2 text-sm ${
-						errors.email ? 'border-red-600' : 'border-(--border)'
-					}`}
-				/>
-				{errors.email && (
-					<p className='mt-1 text-sm text-red-600'>{errors.email.message}</p>
-				)}
+							<Controller
+								name='password'
+								control={control}
+								render={({ field, fieldState }) => (
+									<Field data-invalid={fieldState.invalid}>
+										<FieldLabel htmlFor={field.name}>Password</FieldLabel>
+										<Input
+											{...field}
+											id={field.name}
+											type='password'
+											autoComplete='current-password'
+											aria-invalid={fieldState.invalid}
+										/>
+										{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+									</Field>
+								)}
+							/>
 
-				<label htmlFor='password' className='mt-4 mb-1 block text-sm'>
-					Password
-				</label>
-				<input
-					id='password'
-					type='password'
-					autoComplete='current-password'
-					{...register('password')}
-					className={`w-full rounded-md border px-3 py-2 text-sm ${
-						errors.password ? 'border-red-600' : 'border-(--border)'
-					}`}
-				/>
-				{errors.password && (
-					<p className='mt-1 text-sm text-red-600'>{errors.password.message}</p>
-				)}
+							{errors.root && (
+								<FieldError>{errors.root.message}</FieldError>
+							)}
 
-				{errors.root && (
-					<p className='mt-4 text-sm text-red-600'>{errors.root.message}</p>
-				)}
-
-				<button
-					type='submit'
-					disabled={isSubmitting}
-					className='mt-6 w-full rounded-md bg-(--accent) px-3 py-2 text-sm font-medium text-white disabled:opacity-50'
-				>
-					{isSubmitting ? 'Signing in…' : 'Sign in'}
-				</button>
-			</form>
+							<Field>
+								<Button type='submit' disabled={isSubmitting}>
+									{isSubmitting ? 'Signing in…' : 'Sign in'}
+								</Button>
+							</Field>
+						</FieldGroup>
+					</form>
+				</CardContent>
+			</Card>
 		</main>
 	);
 }

@@ -1,5 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { authClient, useAuth } from '../lib/auth-client';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+
+function initials(name?: string) {
+	if (!name) return '?';
+	return name
+		.split(' ')
+		.map(part => part[0])
+		.slice(0, 2)
+		.join('')
+		.toUpperCase();
+}
 
 export function NavBar() {
 	const navigate = useNavigate();
@@ -14,17 +26,16 @@ export function NavBar() {
 	};
 
 	return (
-		<nav className='flex items-center justify-between border-b border-(--border) px-6 py-4'>
-			<span className='font-medium text-(--text-h)'>Support Desk</span>
-			<div className='flex items-center gap-4'>
+		<nav className='flex items-center justify-between border-b border-border px-6 py-4'>
+			<span className='font-heading font-medium'>Support Desk</span>
+			<div className='flex items-center gap-3'>
+				<Avatar size='sm'>
+					<AvatarFallback>{initials(session?.user.name)}</AvatarFallback>
+				</Avatar>
 				<span className='text-sm'>{session?.user.name}</span>
-				<button
-					type='button'
-					onClick={handleSignOut}
-					className='rounded-md border border-(--border) px-3 py-1.5 text-sm hover:bg-(--code-bg)'
-				>
+				<Button type='button' variant='outline' size='sm' onClick={handleSignOut}>
 					Sign out
-				</button>
+				</Button>
 			</div>
 		</nav>
 	);

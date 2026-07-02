@@ -1,5 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth-client';
+import { Badge } from '@/components/ui/badge';
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
+
+const statusLabel = {
+	checking: 'Checking…',
+	ok: 'Operational',
+	error: 'Unavailable',
+} as const;
+
+const statusVariant = {
+	checking: 'secondary',
+	ok: 'default',
+	error: 'destructive',
+} as const;
 
 export function HomePage() {
 	const { data: session } = useAuth();
@@ -13,9 +33,17 @@ export function HomePage() {
 	}, []);
 
 	return (
-		<main className='flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center'>
-			<h1>Welcome, {session?.user.name}</h1>
-			<p className='text-sm'>API status: {status}</p>
+		<main className='flex flex-1 items-center justify-center p-6'>
+			<Card className='w-full max-w-sm'>
+				<CardHeader>
+					<CardTitle className='text-2xl'>Welcome, {session?.user.name}</CardTitle>
+					<CardDescription>Support Desk dashboard</CardDescription>
+				</CardHeader>
+				<CardContent className='flex items-center gap-2'>
+					<span className='text-sm text-muted-foreground'>API status</span>
+					<Badge variant={statusVariant[status]}>{statusLabel[status]}</Badge>
+				</CardContent>
+			</Card>
 		</main>
 	);
 }

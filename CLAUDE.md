@@ -33,6 +33,39 @@ Root `package.json` scripts (Bun workspaces, `--filter '*'`):
 - `bun run dev` — runs both `client` and `server` dev scripts in parallel
 - `bun run build` — runs `build` in every workspace that defines one (client only)
 
+## Authentication
+
+Email/password auth via **better-auth** (`^1.6.x`). No self-serve sign-up —
+users are provisioned only via the seed script.
+
+- `server/src/lib/auth.ts` — `betterAuth()` config: `basePath: '/api/auth'`,
+  `prismaAdapter` against the `supportdesk` DB, `trustedOrigins` from
+  `CLIENT_URL`, `emailAndPassword.disableSignUp: true`. Adds a required
+  `role` field to the user model (`admin` | `agent`, `input: false` so
+  clients can't self-assign it, defaults to `agent`).
+- `server/index.ts` — mounts the auth handler on
+  `app.all('/api/auth/{*any}', ...)` via `toNodeHandler(auth)` *before*
+  `express.json()` is registered. `server/src/middleware/require-auth.ts`
+  (`requireAuth`) calls `auth.api.getSession`, attaches `req.user` /
+  `req.session`, and 401s otherwise — apply it to any route that needs a
+  signed-in user (see `/api/me` for the pattern).
+- `server/prisma/seed.ts` — creates the one admin user via
+  `auth.$context.internalAdapter` + `ctx.password.hash`, reading
+  `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` from `server/.env`. Run with
+  `bun run seed` from `server/` after migrating.
+- `client/src/lib/auth-client.ts` — `createAuthClient()` from
+  `better-auth/react` (no explicit `baseURL`; relies on the Vite proxy to
+  reach `/api/auth` same-origin). Exposes a `useAuth()` hook wrapping
+  `useSession()`.
+- `client/src/pages/LoginPage.tsx` — email/password form
+  (react-hook-form + zod) calling `authClient.signIn.email`.
+- `client/src/components/ProtectedRoute.tsx` — route guard: redirects to
+  `/login` when there's no session, otherwise renders `NavBar` + the
+  matched route. Wired up in `App.tsx` around the authenticated routes.
+
+Required env vars (see `server/.env.example`): `BETTER_AUTH_SECRET`,
+`BETTER_AUTH_URL`, `CLIENT_URL`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`.
+
 ## Versions in use
 
 Installed via Bun from npm, not pinned to older training-data defaults:
@@ -43,6 +76,6 @@ majors, so check context7 before assuming v5/v6-era APIs still apply.
 
 ## Not yet implemented
 
-Authentication, ticket CRUD, data models (User/Ticket), AI features (Claude
-API), email integration, dashboard, Docker — see `implementation-plan.md` for
-the phase breakdown.
+Ticket CRUD, data models beyond the auth User (Ticket, etc.), AI features
+(Claude API), email integration, dashboard, Docker — see
+`implementation-plan.md` for the phase breakdown.
