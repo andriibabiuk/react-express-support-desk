@@ -11,7 +11,10 @@ const port = process.env.PORT ?? 4000;
 
 app.use(helmet());
 
-app.all('/api/auth/{*any}', authLimiter, (req, res, next) =>
+const authMiddleware =
+	process.env.NODE_ENV === 'production' ? [authLimiter] : [];
+
+app.all('/api/auth/{*any}', ...authMiddleware, (req, res, next) =>
 	toNodeHandler(auth)(req, res).catch(next),
 );
 
