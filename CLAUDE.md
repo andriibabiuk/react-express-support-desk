@@ -74,6 +74,16 @@ versions in each workspace's `package.json` before assuming API shape — Prisma
 7 in particular changed the generator/driver-adapter model from earlier
 majors, so check context7 before assuming v5/v6-era APIs still apply.
 
+## Testing
+
+E2E tests are Playwright-based (root `playwright.config.ts`, `e2e/` dir) with
+their own isolated test database and ports — separate from normal `bun run
+dev`. Use the **playwright-e2e-tester** agent to write or extend end-to-end
+tests; it already knows the test-environment setup (test DB reset flow,
+dedicated ports, Prisma's AI-consent gate on destructive commands, and this
+environment's headless-browser-hang quirk), so don't duplicate that context
+here — see `.claude/agents/playwright-e2e-tester.md` for the details.
+
 ## Not yet implemented
 
 Ticket CRUD, data models beyond the auth User (Ticket, etc.), AI features
