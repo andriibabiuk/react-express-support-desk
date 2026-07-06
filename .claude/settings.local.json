@@ -30,7 +30,8 @@
       "Bash(curl -s http://localhost:4000/api/health -w \"\\\\nstatus: %{http_code}\\\\n\")",
       "Bash(wait)",
       "Bash(bunx shadcn@latest add skeleton --yes)",
-      "Bash(bunx --bun shadcn@latest add dialog --yes)"
+      "Bash(bunx --bun shadcn@latest add dialog --yes)",
+      "Bash(bunx vitest *)"
     ]
   }
 }

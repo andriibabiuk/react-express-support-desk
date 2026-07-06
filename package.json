@@ -10,6 +10,7 @@
 	"scripts": {
 		"dev": "bun run --filter '*' --parallel dev",
 		"build": "bun run --filter '*' build",
+		"test": "bun run --filter '*' test",
 		"test:e2e:db:reset": "bun run e2e/reset-test-db.ts",
 		"test:e2e": "bun run test:e2e:db:reset && playwright test"
 	},

@@ -1,9 +1,3 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { createUserSchema, type CreateUserInput } from 'core';
-import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -16,15 +10,23 @@ import {
 } from '@/components/ui/dialog';
 import {
 	Field,
-	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { createUserSchema, type CreateUserInput } from 'core';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
 function extractErrorMessage(error: unknown) {
-	if (axios.isAxiosError(error) && typeof error.response?.data?.error === 'string') {
+	if (
+		axios.isAxiosError(error) &&
+		typeof error.response?.data?.error === 'string'
+	) {
 		return error.response.data.error as string;
 	}
 	return 'Failed to create user.';
@@ -75,7 +77,9 @@ export function CreateUserDialog() {
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Create user</DialogTitle>
-					<DialogDescription>Add a new agent to the support desk.</DialogDescription>
+					<DialogDescription>
+						Add a new agent to the support desk.
+					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSubmit} noValidate>
 					<FieldGroup>
@@ -92,7 +96,9 @@ export function CreateUserDialog() {
 										autoComplete='name'
 										aria-invalid={fieldState.invalid}
 									/>
-									{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+									{fieldState.invalid && (
+										<FieldError errors={[fieldState.error]} />
+									)}
 								</Field>
 							)}
 						/>
@@ -111,7 +117,9 @@ export function CreateUserDialog() {
 										autoComplete='email'
 										aria-invalid={fieldState.invalid}
 									/>
-									{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+									{fieldState.invalid && (
+										<FieldError errors={[fieldState.error]} />
+									)}
 								</Field>
 							)}
 						/>
@@ -130,10 +138,10 @@ export function CreateUserDialog() {
 										autoComplete='new-password'
 										aria-invalid={fieldState.invalid}
 									/>
-									{!fieldState.invalid && (
-										<FieldDescription>Must be at least 8 characters.</FieldDescription>
+
+									{fieldState.invalid && (
+										<FieldError errors={[fieldState.error]} />
 									)}
-									{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
 								</Field>
 							)}
 						/>

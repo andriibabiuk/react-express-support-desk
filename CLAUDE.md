@@ -143,8 +143,9 @@ in `client/vitest.config.ts` (merges the app's `vite.config.ts` via
 `mergeConfig` — same React/Tailwind plugins and `@` alias, plus a jsdom test
 environment).
 
-- Run with `bun run test` from `client/` (`vitest run`, single pass — not
-  watch mode).
+- Run with `bun run test` — from the repo root (`--filter '*'`, runs `test`
+  in every workspace that defines one, currently `client` only) or directly
+  from `client/`. Either way it's `vitest run`, a single pass, not watch mode.
 - Write a test file as `Component.test.tsx` **co-located** next to the
   component it covers (e.g. `client/src/components/UsersTable.test.tsx` next
   to `UsersTable.tsx`), not in a separate mirrored test tree.
