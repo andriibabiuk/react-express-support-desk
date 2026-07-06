@@ -94,6 +94,31 @@ dedicated ports, Prisma's AI-consent gate on destructive commands, and this
 environment's headless-browser-hang quirk), so don't duplicate that context
 here — see `.claude/agents/playwright-e2e-tester.md` for the details.
 
+### Component tests
+
+Client component tests use **Vitest** + **React Testing Library**, configured
+in `client/vitest.config.ts` (merges the app's `vite.config.ts` via
+`mergeConfig` — same React/Tailwind plugins and `@` alias, plus a jsdom test
+environment).
+
+- Run with `bun run test` from `client/` (`vitest run`, single pass — not
+  watch mode).
+- Write a test file as `Component.test.tsx` **co-located** next to the
+  component it covers (e.g. `client/src/pages/UsersPage.test.tsx` next to
+  `UsersPage.tsx`), not in a separate mirrored test tree.
+- Shared test infrastructure (not tests themselves) lives in
+  `client/src/test/`: `setup.ts` (jest-dom matchers, and a manual RTL
+  `cleanup()` in `afterEach` — this project doesn't set `test.globals` in
+  Vitest, so React Testing Library's own implicit auto-cleanup never
+  registers; skipping this causes renders from earlier tests in the same file
+  to leak into later ones) and `utils.tsx` (`renderWithQuery`, for mounting a
+  component under a fresh `QueryClientProvider` — needed for anything using
+  `useQuery`/`useMutation`, see the [Data fetching](#data-fetching) section).
+- Mock `axios` per test file with `vi.mock('axios', () => ({ default: { get:
+  vi.fn() } }))` rather than hitting a real server — see
+  `client/src/pages/UsersPage.test.tsx` for the pattern (pending/success/error
+  states driven by `mockReturnValue`/`mockResolvedValue`/`mockRejectedValue`).
+
 ## Not yet implemented
 
 Ticket CRUD, data models beyond the auth User (Ticket, etc.), AI features
