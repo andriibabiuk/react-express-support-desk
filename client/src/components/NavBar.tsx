@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { authClient, useAuth } from '../lib/auth-client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,9 @@ export function NavBar() {
 	return (
 		<nav className='flex items-center justify-between border-b border-border px-6 py-4'>
 			<div className='flex items-center gap-6'>
-				<span className='font-heading font-medium'>Support Desk</span>
+				<Link to='/' className='font-heading font-medium'>
+						Support Desk
+					</Link>
 				{session?.user.role === 'admin' && (
 					<NavLink
 						to='/users'

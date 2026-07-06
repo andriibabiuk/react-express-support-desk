@@ -31,7 +31,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 });
 app.get('/api/users', requireAuth, requireAdmin, async (_req, res) => {
 	const users = await prisma.user.findMany({
-		select: { id: true, name: true, email: true, role: true },
+		select: { id: true, name: true, email: true, role: true, createdAt: true },
 		orderBy: { createdAt: 'asc' },
 	});
 	res.json({ users });
