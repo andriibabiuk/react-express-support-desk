@@ -1,7 +1,8 @@
 import { createAuthClient } from 'better-auth/react';
+import type { Role } from 'core';
 
 interface AppSession {
-	user: { name: string; email: string; role: 'admin' | 'agent' };
+	user: { name: string; email: string; role: Role };
 }
 
 export const authClient = createAuthClient();

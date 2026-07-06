@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
+import { Role } from 'core';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { renderWithQuery } from '../test/utils';
 import { UserDialog } from './UserDialog';
@@ -17,7 +18,7 @@ const USER: User = {
 	id: 'user-1',
 	name: 'Jane Doe',
 	email: 'jane@example.com',
-	role: 'agent',
+	role: Role.agent,
 	createdAt: '2026-01-01T00:00:00.000Z',
 };
 

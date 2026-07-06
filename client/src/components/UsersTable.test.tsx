@@ -1,11 +1,12 @@
 import { screen, within } from '@testing-library/react';
 import axios from 'axios';
+import { Role } from 'core';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { renderWithQuery } from '../test/utils';
 import { UsersTable } from './UsersTable';
 
 vi.mock('axios', () => ({
-	default: { get: vi.fn(), patch: vi.fn() },
+	default: { get: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
 const mockedGet = axios.get as unknown as Mock;
@@ -15,14 +16,14 @@ const USERS = [
 		id: '1',
 		name: 'Ada Admin',
 		email: 'ada@example.com',
-		role: 'admin' as const,
+		role: Role.admin,
 		createdAt: '2026-01-15T00:00:00.000Z',
 	},
 	{
 		id: '2',
 		name: 'Alex Agent',
 		email: 'alex@example.com',
-		role: 'agent' as const,
+		role: Role.agent,
 		createdAt: '2026-02-20T00:00:00.000Z',
 	},
 ];
@@ -67,15 +68,23 @@ describe('UsersTable', () => {
 		const adminRow = within(rows[1]);
 		expect(adminRow.getByText('Ada Admin')).toBeInTheDocument();
 		expect(adminRow.getByText('ada@example.com')).toBeInTheDocument();
-		expect(adminRow.getByText('admin')).toBeInTheDocument();
+		expect(adminRow.getByText(Role.admin)).toBeInTheDocument();
 		expect(adminRow.getByText(expectedDate(USERS[0].createdAt))).toBeInTheDocument();
 
 		const agentRow = within(rows[2]);
 		expect(agentRow.getByText('Alex Agent')).toBeInTheDocument();
-		expect(agentRow.getByText('agent')).toBeInTheDocument();
+		expect(agentRow.getByText(Role.agent)).toBeInTheDocument();
 
 		expect(adminRow.getByRole('button', { name: `Edit ${USERS[0].name}` })).toBeInTheDocument();
 		expect(agentRow.getByRole('button', { name: `Edit ${USERS[1].name}` })).toBeInTheDocument();
+
+		// Admins can't be deleted, so no delete action renders for that row.
+		expect(
+			adminRow.queryByRole('button', { name: `Delete ${USERS[0].name}` }),
+		).not.toBeInTheDocument();
+		expect(
+			agentRow.getByRole('button', { name: `Delete ${USERS[1].name}` }),
+		).toBeInTheDocument();
 	});
 
 	it('shows an error message when the request fails', async () => {

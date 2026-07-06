@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import axios from 'axios';
+import { Role } from 'core';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { renderWithQuery } from '../test/utils';
 import { UsersPage } from './UsersPage';
@@ -23,7 +24,7 @@ describe('UsersPage', () => {
 						id: '1',
 						name: 'Ada Admin',
 						email: 'ada@example.com',
-						role: 'admin',
+						role: Role.admin,
 						createdAt: '2026-01-15T00:00:00.000Z',
 					},
 				],

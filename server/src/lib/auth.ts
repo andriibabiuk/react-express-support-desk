@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { prisma } from './prisma.ts';
@@ -15,10 +16,15 @@ export const auth = betterAuth({
 	user: {
 		additionalFields: {
 			role: {
-				type: ['admin', 'agent'],
+				type: [Role.admin, Role.agent],
 				input: false,
 				required: true,
-				defaultValue: 'agent',
+				defaultValue: Role.agent,
+			},
+			deletedAt: {
+				type: 'date',
+				input: false,
+				required: false,
 			},
 		},
 	},

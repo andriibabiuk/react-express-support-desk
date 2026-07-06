@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { Role } from 'core';
+import { DeleteUserDialog } from '@/components/DeleteUserDialog';
 import { UserDialog } from '@/components/UserDialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +18,7 @@ export interface User {
 	id: string;
 	name: string;
 	email: string;
-	role: 'admin' | 'agent';
+	role: Role;
 	createdAt: string;
 }
 
@@ -30,7 +32,7 @@ const COLUMN_WIDTH = {
 	email: 'w-64',
 	role: 'w-24',
 	created: 'w-32',
-	actions: 'w-12',
+	actions: 'w-20',
 };
 
 function formatDate(value: string) {
@@ -78,7 +80,10 @@ export function UsersTable() {
 									<Skeleton className='h-4 w-20' />
 								</TableCell>
 								<TableCell>
-									<Skeleton className='size-7' />
+									<div className='flex gap-1'>
+										<Skeleton className='size-7' />
+										<Skeleton className='size-7' />
+									</div>
 								</TableCell>
 							</TableRow>
 						))}
@@ -105,13 +110,16 @@ export function UsersTable() {
 								<TableCell className='truncate'>{user.name}</TableCell>
 								<TableCell className='truncate'>{user.email}</TableCell>
 								<TableCell>
-									<Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+									<Badge variant={user.role === Role.admin ? 'default' : 'secondary'}>
 										{user.role}
 									</Badge>
 								</TableCell>
 								<TableCell>{formatDate(user.createdAt)}</TableCell>
 								<TableCell>
-									<UserDialog mode='edit' user={user} />
+									<div className='flex gap-1'>
+										<UserDialog mode='edit' user={user} />
+										<DeleteUserDialog user={user} />
+									</div>
 								</TableCell>
 							</TableRow>
 						))}

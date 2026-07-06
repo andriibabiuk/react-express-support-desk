@@ -1,3 +1,4 @@
+import { Role } from 'core';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { authClient, useAuth } from '../lib/auth-client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -31,7 +32,7 @@ export function NavBar() {
 				<Link to='/' className='font-heading font-medium'>
 						Support Desk
 					</Link>
-				{session?.user.role === 'admin' && (
+				{session?.user.role === Role.admin && (
 					<NavLink
 						to='/users'
 						className={({ isActive }) =>

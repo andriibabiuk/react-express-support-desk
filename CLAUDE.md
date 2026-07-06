@@ -101,8 +101,8 @@ users are provisioned only via the seed script.
 - `server/src/lib/auth.ts` — `betterAuth()` config: `basePath: '/api/auth'`,
   `prismaAdapter` against the `supportdesk` DB, `trustedOrigins` from
   `CLIENT_URL`, `emailAndPassword.disableSignUp: true`. Adds a required
-  `role` field to the user model (`admin` | `agent`, `input: false` so
-  clients can't self-assign it, defaults to `agent`).
+  `role` field to the user model (`Role.admin` | `Role.agent`, `input: false`
+  so clients can't self-assign it, defaults to `Role.agent`).
 - `server/index.ts` — mounts the auth handler on
   `app.all('/api/auth/{*any}', ...)` via `toNodeHandler(auth)` *before*
   `express.json()` is registered. `server/src/middleware/require-auth.ts`
@@ -125,6 +125,57 @@ users are provisioned only via the seed script.
 
 Required env vars (see `server/.env.example`): `BETTER_AUTH_SECRET`,
 `BETTER_AUTH_URL`, `CLIENT_URL`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`.
+
+### Never compare roles against raw strings
+
+`'admin'` / `'agent'` must never appear as string literals in application
+code — always go through a `Role` enum, so a typo or a future role rename is
+a compile error instead of a silent no-op comparison.
+
+- Server: `import { Role } from '@prisma/client'` — it's generated from the
+  `enum Role { admin agent }` in `server/prisma/schema.prisma`, so it's
+  already the single source of truth there. See
+  `server/src/middleware/require-admin.ts` (`req.user.role !== Role.admin`),
+  `server/src/lib/auth.ts` (`additionalFields.role`), and
+  `server/src/routes/users.ts` (`Role.agent` on create, `Role.admin` checks
+  on delete).
+- Client: `@prisma/client` is server-only (it isn't, and shouldn't be, a
+  `client` dependency — its generated code isn't meant for a browser
+  bundle), so `core/src/role.ts` defines a small framework-agnostic mirror
+  with the exact same shape Prisma generates (`export const Role = {admin:
+  'admin', agent: 'agent'} as const` + `export type Role =
+  (typeof Role)[keyof typeof Role]`), re-exported from `core/src/index.ts`.
+  Import it the same way as the zod schemas — `import { Role } from
+  'core'` — see `client/src/components/AdminRoute.tsx`,
+  `client/src/components/NavBar.tsx`,
+  `client/src/components/DeleteUserDialog.tsx`, and
+  `client/src/components/UsersTable.tsx` (the `User['role']` type itself is
+  `Role`, not `'admin' | 'agent'`).
+- These are two separate declarations (Prisma can't be avoided server-side;
+  `core` can't depend on Prisma), so if a role is ever added or renamed in
+  `schema.prisma`, update `core/src/role.ts` to match by hand — nothing
+  enforces they stay in sync automatically.
+
+### User deletion is a soft delete
+
+`DELETE /api/users/:id` in `server/src/routes/users.ts` never removes the
+row — it sets `User.deletedAt` (nullable `DateTime` in
+`server/prisma/schema.prisma`) and immediately revokes the user's active
+sessions via `ctx.internalAdapter.deleteUserSessions(id)`. `GET /api/users`
+filters `where: { deletedAt: null }` so deleted users just disappear from
+the admin list. Deleting a user with `role: Role.admin` 403s — this is checked
+against the *target* user's role, not the requester's (`requireAdmin`
+already covers the requester). Client-side, `DeleteUserDialog.tsx` also
+hides its trigger entirely for admin rows, so the 403 path is a defense in
+depth, not the primary guard.
+
+Two things this deliberately does **not** do (out of scope until a real need
+shows up): a deleted user isn't blocked from signing back in — better-auth's
+own sign-in flow doesn't know about `deletedAt` — and `User.email`'s
+`@@unique` constraint means a deleted user's email stays taken, so nobody
+can register a new account with it. Fixing either would mean adopting
+better-auth's `admin` plugin (built-in ban/session-revocation, but a bigger
+integration change) or a partial unique index, respectively.
 
 ## Versions in use
 
