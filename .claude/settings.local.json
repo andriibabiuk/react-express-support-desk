@@ -31,7 +31,9 @@
       "Bash(wait)",
       "Bash(bunx shadcn@latest add skeleton --yes)",
       "Bash(bunx --bun shadcn@latest add dialog --yes)",
-      "Bash(bunx vitest *)"
+      "Bash(bunx vitest *)",
+      "Bash(find /d/workdir/react-express-support-desk/node_modules/.bun/better-auth@1.6.23+2b7b9210b6f9d945/node_modules/better-auth -iname *.mjs -path *internal-adapter* -o -iname *.ts -path *internal-adapter*)",
+      "Bash(find /d/workdir/react-express-support-desk/node_modules/.bun/better-auth@1.6.23+2b7b9210b6f9d945/node_modules/better-auth -iname *internal-adapter*)"
     ]
   }
 }

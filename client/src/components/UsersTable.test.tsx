@@ -5,7 +5,7 @@ import { renderWithQuery } from '../test/utils';
 import { UsersTable } from './UsersTable';
 
 vi.mock('axios', () => ({
-	default: { get: vi.fn() },
+	default: { get: vi.fn(), patch: vi.fn() },
 }));
 
 const mockedGet = axios.get as unknown as Mock;
@@ -73,6 +73,9 @@ describe('UsersTable', () => {
 		const agentRow = within(rows[2]);
 		expect(agentRow.getByText('Alex Agent')).toBeInTheDocument();
 		expect(agentRow.getByText('agent')).toBeInTheDocument();
+
+		expect(adminRow.getByRole('button', { name: `Edit ${USERS[0].name}` })).toBeInTheDocument();
+		expect(agentRow.getByRole('button', { name: `Edit ${USERS[1].name}` })).toBeInTheDocument();
 	});
 
 	it('shows an error message when the request fails', async () => {

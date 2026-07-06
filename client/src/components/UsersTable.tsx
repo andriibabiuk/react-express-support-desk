@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { UserDialog } from '@/components/UserDialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -11,7 +12,7 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 
-interface User {
+export interface User {
 	id: string;
 	name: string;
 	email: string;
@@ -29,6 +30,7 @@ const COLUMN_WIDTH = {
 	email: 'w-64',
 	role: 'w-24',
 	created: 'w-32',
+	actions: 'w-12',
 };
 
 function formatDate(value: string) {
@@ -55,6 +57,9 @@ export function UsersTable() {
 							<TableHead className={COLUMN_WIDTH.email}>Email</TableHead>
 							<TableHead className={COLUMN_WIDTH.role}>Role</TableHead>
 							<TableHead className={COLUMN_WIDTH.created}>Created</TableHead>
+							<TableHead className={COLUMN_WIDTH.actions}>
+								<span className='sr-only'>Actions</span>
+							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -72,6 +77,9 @@ export function UsersTable() {
 								<TableCell>
 									<Skeleton className='h-4 w-20' />
 								</TableCell>
+								<TableCell>
+									<Skeleton className='size-7' />
+								</TableCell>
 							</TableRow>
 						))}
 					</TableBody>
@@ -86,6 +94,9 @@ export function UsersTable() {
 							<TableHead className={COLUMN_WIDTH.email}>Email</TableHead>
 							<TableHead className={COLUMN_WIDTH.role}>Role</TableHead>
 							<TableHead className={COLUMN_WIDTH.created}>Created</TableHead>
+							<TableHead className={COLUMN_WIDTH.actions}>
+								<span className='sr-only'>Actions</span>
+							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -99,6 +110,9 @@ export function UsersTable() {
 									</Badge>
 								</TableCell>
 								<TableCell>{formatDate(user.createdAt)}</TableCell>
+								<TableCell>
+									<UserDialog mode='edit' user={user} />
+								</TableCell>
 							</TableRow>
 						))}
 					</TableBody>

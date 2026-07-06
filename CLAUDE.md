@@ -56,11 +56,12 @@ hand-rolled checks.
 - Client: form schemas paired with `react-hook-form` via
   `@hookform/resolvers/zod` (`zodResolver`) — see
   `client/src/pages/LoginPage.tsx` and
-  `client/src/components/CreateUserDialog.tsx`.
+  `client/src/components/UserDialog.tsx` (one dialog, `mode: 'create' |
+  'edit'`, driving `createUserSchema`/`updateUserSchema` from `core`).
 - Server: request bodies are validated with a zod schema before touching the
-  DB — see the `POST /api/users` handler in `server/src/routes/users.ts`
-  (`schema.safeParse(req.body)`, errors formatted with `z.prettifyError` and
-  returned as 400s).
+  DB — see the `POST /api/users` and `PATCH /api/users/:id` handlers in
+  `server/src/routes/users.ts` (`schema.safeParse(req.body)`, errors
+  formatted with `z.prettifyError` and returned as 400s).
 
 ### Shared schemas live in `core`
 
@@ -71,7 +72,14 @@ independently on each side — the `client`/`server` copies will drift.
 
 - Add the schema (and its inferred type, `z.infer<typeof schema>`) to a file
   under `core/src/` — one file per resource, e.g. `core/src/user.ts` holds
-  `createUserSchema` / `CreateUserInput`. Re-export it from `core/src/index.ts`.
+  `createUserSchema` / `CreateUserInput` and `updateUserSchema` /
+  `UpdateUserInput` (the latter's `password` field is optional-by-blank —
+  empty string means "don't change the password", enforced by a `.refine`
+  rather than `.optional()` since the form always submits a string). Factor
+  out fields shared between sibling schemas (e.g. `name`/`email` between
+  create and update) into local consts reused via spread, rather than
+  duplicating the validation rules. Re-export everything from
+  `core/src/index.ts`.
 - `core/package.json` has no build step — `exports["."]` points straight at
   `./src/index.ts`, consumed as raw TypeScript by both Bun (`server`) and
   Vite (`client`), same as how `server` itself runs. Add any schema-only

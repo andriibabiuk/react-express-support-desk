@@ -1,5 +1,5 @@
 import { Role } from '@prisma/client';
-import { createUserSchema } from 'core';
+import { createUserSchema, updateUserSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
 import { auth } from '../lib/auth.ts';
@@ -49,6 +49,47 @@ usersRouter.post('/', requireAuth, requireAdmin, async (req, res) => {
 	});
 
 	res.status(201).json({
+		user: {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			role: user.role,
+			createdAt: user.createdAt,
+		},
+	});
+});
+
+usersRouter.patch<{ id: string }>('/:id', requireAuth, requireAdmin, async (req, res) => {
+	const parsed = updateUserSchema.safeParse(req.body);
+	if (!parsed.success) {
+		res.status(400).json({ error: z.prettifyError(parsed.error) });
+		return;
+	}
+	const { id } = req.params;
+	const { name, email, password } = parsed.data;
+
+	const ctx = await auth.$context;
+
+	const existingUser = await ctx.internalAdapter.findUserById(id);
+	if (!existingUser) {
+		res.status(404).json({ error: 'User not found.' });
+		return;
+	}
+
+	const emailOwner = await ctx.internalAdapter.findUserByEmail(email);
+	if (emailOwner && emailOwner.user.id !== id) {
+		res.status(409).json({ error: 'A user with this email already exists.' });
+		return;
+	}
+
+	const user = await ctx.internalAdapter.updateUser(id, { name, email });
+
+	if (password) {
+		const hashedPassword = await ctx.password.hash(password);
+		await ctx.internalAdapter.updatePassword(id, hashedPassword);
+	}
+
+	res.json({
 		user: {
 			id: user.id,
 			name: user.name,
