@@ -33,6 +33,16 @@ Root `package.json` scripts (Bun workspaces, `--filter '*'`):
 - `bun run dev` — runs both `client` and `server` dev scripts in parallel
 - `bun run build` — runs `build` in every workspace that defines one (client only)
 
+## Data fetching
+
+Client-side HTTP calls to the API use **axios**, not the raw `fetch` API, and
+server state is managed with **@tanstack/react-query** (`useQuery`/
+`useMutation`), not manual `useEffect`/`useState` fetch plumbing. A
+`QueryClient`/`QueryClientProvider` is set up once in `App.tsx`. See
+`client/src/pages/HomePage.tsx` and `client/src/pages/UsersPage.tsx` for the
+pattern (axios call as the `queryFn`, `isPending`/`isError`/`data` driving the
+UI) before adding a new data-fetching component.
+
 ## Authentication
 
 Email/password auth via **better-auth** (`^1.6.x`). No self-serve sign-up —

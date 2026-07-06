@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { Badge } from '@/components/ui/badge';
 import {
 	Table,
@@ -17,30 +18,18 @@ interface User {
 }
 
 export function UsersPage() {
-	const [users, setUsers] = useState<User[]>([]);
-	const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
-
-	useEffect(() => {
-		fetch('/api/users')
-			.then(res => res.json())
-			.then(data => {
-				setUsers(data.users);
-				setStatus('ok');
-			})
-			.catch(() => setStatus('error'));
-	}, []);
+	const { data, isPending, isError } = useQuery({
+		queryKey: ['users'],
+		queryFn: () => axios.get('/api/users').then(res => res.data.users as User[]),
+	});
 
 	return (
 		<main className='flex-1 p-6'>
 			<h1 className='text-2xl font-heading font-medium'>Users</h1>
 
-			{status === 'loading' && (
-				<p className='mt-4 text-sm text-muted-foreground'>Loading…</p>
-			)}
-			{status === 'error' && (
-				<p className='mt-4 text-sm text-destructive'>Failed to load users.</p>
-			)}
-			{status === 'ok' && (
+			{isPending && <p className='mt-4 text-sm text-muted-foreground'>Loading…</p>}
+			{isError && <p className='mt-4 text-sm text-destructive'>Failed to load users.</p>}
+			{data && (
 				<Table className='mt-4'>
 					<TableHeader>
 						<TableRow>
@@ -50,7 +39,7 @@ export function UsersPage() {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{users.map(user => (
+						{data.map(user => (
 							<TableRow key={user.id}>
 								<TableCell>{user.name}</TableCell>
 								<TableCell>{user.email}</TableCell>

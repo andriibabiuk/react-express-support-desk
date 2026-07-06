@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { useAuth } from '../lib/auth-client';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -23,14 +24,12 @@ const statusVariant = {
 
 export function HomePage() {
 	const { data: session } = useAuth();
-	const [status, setStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+	const { data, isPending, isError } = useQuery({
+		queryKey: ['health'],
+		queryFn: () => axios.get('/api/health').then(res => res.data),
+	});
 
-	useEffect(() => {
-		fetch('/api/health')
-			.then(res => res.json())
-			.then(data => setStatus(data.status === 'ok' ? 'ok' : 'error'))
-			.catch(() => setStatus('error'));
-	}, []);
+	const status = isPending ? 'checking' : isError || data.status !== 'ok' ? 'error' : 'ok';
 
 	return (
 		<main className='flex flex-1 items-center justify-center p-6'>
