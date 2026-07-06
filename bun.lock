@@ -23,6 +23,7 @@
         "better-auth": "^1.6.23",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "core": "workspace:*",
         "lucide-react": "^1.23.0",
         "radix-ui": "^1.6.1",
         "react": "^19.2.7",
@@ -49,16 +50,24 @@
         "vitest": "^4.1.10",
       },
     },
+    "core": {
+      "name": "core",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
+    },
     "server": {
       "name": "server",
       "dependencies": {
         "@prisma/adapter-pg": "^7.8.0",
         "@prisma/client": "^7.8.0",
         "better-auth": "^1.6.23",
+        "core": "workspace:*",
         "express": "^5.2.1",
         "express-rate-limit": "^8.5.2",
         "helmet": "^8.2.0",
         "pg": "^8.22.0",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -674,6 +683,8 @@
     "cookie": ["cookie@0.7.2", "", {}, "sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w=="],
 
     "cookie-signature": ["cookie-signature@1.2.2", "", {}, "sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg=="],
+
+    "core": ["core@workspace:core"],
 
     "cors": ["cors@2.8.6", "", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw=="],
 

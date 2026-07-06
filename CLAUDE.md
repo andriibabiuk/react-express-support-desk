@@ -18,7 +18,12 @@ Bun workspace monorepo:
 - `client/` — React 19 + TypeScript, scaffolded with Vite (`bun create vite`).
   Dev server proxies `/api/*` to the server on port 4000 (see `vite.config.ts`).
 - `server/` — Express 5 + TypeScript, run directly by the Bun runtime (no
-  build step). Entry point `server/index.ts`.
+  build step). Entry point `server/index.ts`, with route modules under
+  `server/src/routes/` (e.g. `users.ts`, mounted in `index.ts` via
+  `app.use('/api/users', usersRouter)`).
+- `core/` — shared TypeScript package with no build step (consumed as raw
+  `.ts` source, same as `server`); holds code that both `client` and `server`
+  need, currently zod schemas. See [Validation](#validation) below.
 - `server/prisma/schema.prisma` — Prisma ORM against a local PostgreSQL
   database named `supportdesk`. Prisma 7 requires an explicit driver adapter
   (no default query engine); the app uses `@prisma/adapter-pg`, wired up in
@@ -39,9 +44,46 @@ Client-side HTTP calls to the API use **axios**, not the raw `fetch` API, and
 server state is managed with **@tanstack/react-query** (`useQuery`/
 `useMutation`), not manual `useEffect`/`useState` fetch plumbing. A
 `QueryClient`/`QueryClientProvider` is set up once in `App.tsx`. See
-`client/src/pages/HomePage.tsx` and `client/src/pages/UsersPage.tsx` for the
-pattern (axios call as the `queryFn`, `isPending`/`isError`/`data` driving the
-UI) before adding a new data-fetching component.
+`client/src/pages/HomePage.tsx` and `client/src/components/UsersTable.tsx`
+for the pattern (axios call as the `queryFn`, `isPending`/`isError`/`data`
+driving the UI) before adding a new data-fetching component.
+
+## Validation
+
+**zod** (`^4.x`) is the data validator on both sides of the stack, not
+hand-rolled checks.
+
+- Client: form schemas paired with `react-hook-form` via
+  `@hookform/resolvers/zod` (`zodResolver`) — see
+  `client/src/pages/LoginPage.tsx` and
+  `client/src/components/CreateUserDialog.tsx`.
+- Server: request bodies are validated with a zod schema before touching the
+  DB — see the `POST /api/users` handler in `server/src/routes/users.ts`
+  (`schema.safeParse(req.body)`, errors formatted with `z.prettifyError` and
+  returned as 400s).
+
+### Shared schemas live in `core`
+
+If a zod schema describes a shape both `client` and `server` need to agree on
+(e.g. a request payload validated server-side and driving a form
+client-side), define it once in the `core` workspace package, not
+independently on each side — the `client`/`server` copies will drift.
+
+- Add the schema (and its inferred type, `z.infer<typeof schema>`) to a file
+  under `core/src/` — one file per resource, e.g. `core/src/user.ts` holds
+  `createUserSchema` / `CreateUserInput`. Re-export it from `core/src/index.ts`.
+- `core/package.json` has no build step — `exports["."]` points straight at
+  `./src/index.ts`, consumed as raw TypeScript by both Bun (`server`) and
+  Vite (`client`), same as how `server` itself runs. Add any schema-only
+  dependency (e.g. `zod`) to `core/package.json`, not just the consumers.
+- Reference it with a plain package import — `import { createUserSchema }
+  from 'core'` — from both `client` and `server`. Both workspaces depend on
+  it via `"core": "workspace:*"` in their `package.json`; after adding a new
+  consumer, run `bun install` from the repo root to link it into that
+  workspace's `node_modules`.
+- A schema that's only ever used on one side (e.g. an env-var schema that's
+  server-only) stays local to that workspace — don't move it to `core`
+  pre-emptively.
 
 ## Authentication
 
@@ -104,8 +146,8 @@ environment).
 - Run with `bun run test` from `client/` (`vitest run`, single pass — not
   watch mode).
 - Write a test file as `Component.test.tsx` **co-located** next to the
-  component it covers (e.g. `client/src/pages/UsersPage.test.tsx` next to
-  `UsersPage.tsx`), not in a separate mirrored test tree.
+  component it covers (e.g. `client/src/components/UsersTable.test.tsx` next
+  to `UsersTable.tsx`), not in a separate mirrored test tree.
 - Shared test infrastructure (not tests themselves) lives in
   `client/src/test/`: `setup.ts` (jest-dom matchers, and a manual RTL
   `cleanup()` in `afterEach` — this project doesn't set `test.globals` in
@@ -116,8 +158,9 @@ environment).
   `useQuery`/`useMutation`, see the [Data fetching](#data-fetching) section).
 - Mock `axios` per test file with `vi.mock('axios', () => ({ default: { get:
   vi.fn() } }))` rather than hitting a real server — see
-  `client/src/pages/UsersPage.test.tsx` for the pattern (pending/success/error
-  states driven by `mockReturnValue`/`mockResolvedValue`/`mockRejectedValue`).
+  `client/src/components/UsersTable.test.tsx` for the pattern
+  (pending/success/error states driven by
+  `mockReturnValue`/`mockResolvedValue`/`mockRejectedValue`).
 
 ## Not yet implemented
 

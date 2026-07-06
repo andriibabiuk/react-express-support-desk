@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import axios from 'axios';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { renderWithQuery } from '../test/utils';
-import { UsersPage } from './UsersPage';
+import { UsersTable } from './UsersTable';
 
 vi.mock('axios', () => ({
 	default: { get: vi.fn() },
@@ -35,7 +35,7 @@ function expectedDate(value: string) {
 	});
 }
 
-describe('UsersPage', () => {
+describe('UsersTable', () => {
 	afterEach(() => {
 		mockedGet.mockReset();
 	});
@@ -43,9 +43,8 @@ describe('UsersPage', () => {
 	it('shows a skeleton table while the request is pending', () => {
 		mockedGet.mockReturnValue(new Promise(() => {})); // never resolves
 
-		renderWithQuery(<UsersPage />);
+		renderWithQuery(<UsersTable />);
 
-		expect(screen.getByRole('heading', { name: 'Users' })).toBeInTheDocument();
 		// 1 header row + the 5 skeleton placeholder rows, no real data yet.
 		expect(screen.getAllByRole('row')).toHaveLength(6);
 		expect(screen.queryByText(USERS[0].email)).not.toBeInTheDocument();
@@ -54,7 +53,7 @@ describe('UsersPage', () => {
 	it('renders the user list once the request resolves', async () => {
 		mockedGet.mockResolvedValue({ data: { users: USERS } });
 
-		renderWithQuery(<UsersPage />);
+		renderWithQuery(<UsersTable />);
 
 		expect(await screen.findByText('Ada Admin')).toBeInTheDocument();
 
@@ -79,7 +78,7 @@ describe('UsersPage', () => {
 	it('shows an error message when the request fails', async () => {
 		mockedGet.mockRejectedValue(new Error('network error'));
 
-		renderWithQuery(<UsersPage />);
+		renderWithQuery(<UsersTable />);
 
 		expect(await screen.findByText('Failed to load users.')).toBeInTheDocument();
 		expect(screen.queryByRole('table')).not.toBeInTheDocument();
