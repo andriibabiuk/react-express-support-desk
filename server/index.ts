@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { auth } from './src/lib/auth.ts';
 import { prisma } from './src/lib/prisma.ts';
 import { authLimiter } from './src/middleware/auth-limiter.ts';
+import { requireAdmin } from './src/middleware/require-admin.ts';
 import { requireAuth } from './src/middleware/require-auth.ts';
 
 const app = express();
@@ -27,6 +28,13 @@ app.get('/api/health', async (_req, res) => {
 app.get('/api/me', requireAuth, (req, res) => {
 	const { id, name, email, role } = req.user;
 	res.json({ user: { id, name, email, role } });
+});
+app.get('/api/users', requireAuth, requireAdmin, async (_req, res) => {
+	const users = await prisma.user.findMany({
+		select: { id: true, name: true, email: true, role: true },
+		orderBy: { createdAt: 'asc' },
+	});
+	res.json({ users });
 });
 
 app.listen(port, () => {
