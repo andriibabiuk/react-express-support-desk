@@ -1,0 +1,4 @@
+- [e2e POM structure](e2e_pom_structure.md) — e2e/pages/*.ts + e2e/fixtures.ts layout and conventions
+- [Agent-user seeding for e2e](e2e_agent_user_seeding.md) — server/prisma/seed-e2e-agent.ts, wired into e2e/reset-test-db.ts
+- [shadcn Nova FieldError locators](e2e_shadcn_field_error_locators.md) — scoping role=alert per-field vs root form error
+- [Playwright devices + describe quirk](playwright_devices_describe_quirk.md) — device presets need top-level test.use, not inside describe

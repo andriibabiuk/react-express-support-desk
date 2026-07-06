@@ -19,3 +19,12 @@ execSync('bun run prisma/seed.ts', {
 	env: process.env,
 	stdio: 'inherit',
 });
+
+// e2e-only: also seed an agent-role user (not part of the app's normal
+// dev/prod seed) so role-gating tests (AdminRoute, NavBar "Users" link) have
+// a non-admin account to log in as.
+execSync('bun run prisma/seed-e2e-agent.ts', {
+	cwd: serverDir,
+	env: process.env,
+	stdio: 'inherit',
+});

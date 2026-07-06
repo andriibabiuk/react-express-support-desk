@@ -5,13 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { authClient, useAuth } from '../lib/auth-client';
 import { Button } from '@/components/ui/button';
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
@@ -52,7 +46,7 @@ export function LoginPage() {
 		<main className='flex flex-1 items-center justify-center p-6'>
 			<Card className='w-full max-w-sm'>
 				<CardHeader>
-					<CardTitle className='text-2xl'>Sign in</CardTitle>
+					<h1 className='font-heading text-2xl leading-snug font-medium'>Sign in</h1>
 					<CardDescription>Enter your email and password to continue</CardDescription>
 				</CardHeader>
 				<CardContent>
