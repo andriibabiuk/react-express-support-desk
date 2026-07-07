@@ -1,6 +1,7 @@
 import { createTicketSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
+import { autoResolveTicket } from '../lib/auto-resolve-ticket.ts';
 import { classifyTicket } from '../lib/classify-ticket.ts';
 import { prisma } from '../lib/prisma.ts';
 import { requireWebhookSecret } from '../middleware/require-webhook-secret.ts';
@@ -31,6 +32,7 @@ emailsRouter.post('/inbound', requireWebhookSecret, async (req, res) => {
 	});
 
 	classifyTicket(ticket);
+	autoResolveTicket(ticket);
 
 	res.status(201).json({ ticket });
 });

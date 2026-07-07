@@ -85,6 +85,8 @@ model Verification {
 }
 
 enum TicketStatus {
+  new
+  processing
   open
   resolved
   closed
@@ -102,7 +104,12 @@ model Ticket {
   body          String
   senderEmail   String
   senderName    String
-  status        TicketStatus    @default(open)
+  // Starts `new`, flips to `processing` while the auto-resolve pg-boss job
+  // (see `server/src/lib/auto-resolve-ticket.ts`) checks the knowledge base,
+  // then settles on `resolved` (AI answered it) or `open` (escalated to a
+  // human agent). `GET /api/tickets` excludes `new`/`processing` so agents
+  // only ever see tickets in a settled state.
+  status        TicketStatus    @default(new)
   category      TicketCategory?
   assignedToId  String?
   assignedTo    User?           @relation(fields: [assignedToId], references: [id])
@@ -117,6 +124,7 @@ model Ticket {
 enum SenderType {
   customer
   agent
+  ai
 }
 
 model TicketReply {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SenderType } from '../constants/sender-type.ts';
 
 export const createReplySchema = z.object({
 	body: z.string().min(1, 'Reply body cannot be empty'),
@@ -10,6 +11,7 @@ export interface TicketReply {
 	id: number;
 	body: string;
 	bodyHtml: string | null;
+	senderType: SenderType;
 	author: { id: string; name: string; email: string } | null;
 	createdAt: string;
 }

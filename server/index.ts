@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { auth } from './src/lib/auth.ts';
+import { registerAutoResolveTicketWorker } from './src/lib/auto-resolve-ticket.ts';
 import { boss } from './src/lib/boss.ts';
 import { registerClassifyTicketWorker } from './src/lib/classify-ticket.ts';
 import { prisma } from './src/lib/prisma.ts';
@@ -53,6 +54,7 @@ app.use('/api/emails', ...emailWebhookMiddleware, emailsRouter);
 
 await boss.start();
 await registerClassifyTicketWorker();
+await registerAutoResolveTicketWorker();
 
 app.listen(port, () => {
 	console.log(`Server listening on http://localhost:${port}`);

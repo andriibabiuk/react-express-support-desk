@@ -15,7 +15,8 @@ function ReplyThread({ replies }: { replies: TicketReply[] }) {
 	return (
 		<div className='space-y-6'>
 			{replies.map(reply => {
-				const authorName = reply.author?.name ?? 'Customer';
+				const authorName =
+					reply.author?.name ?? (reply.senderType === 'ai' ? 'AI Assistant' : 'Customer');
 				return (
 					<div key={reply.id} className='flex gap-4'>
 						<Avatar>

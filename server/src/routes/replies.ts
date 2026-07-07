@@ -5,15 +5,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { replyPolishModel } from '../lib/ai';
 import { prisma } from '../lib/prisma';
+import { textToHtml } from '../lib/text-to-html';
 const router = Router({ mergeParams: true });
-
-function textToHtml(text: string): string {
-	const escaped = text
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;');
-	return escaped.replace(/\n/g, '<br>');
-}
 
 router.get<{ id: string }>('/', async (req, res, next) => {
 	const ticketId = Number(req.params.id);

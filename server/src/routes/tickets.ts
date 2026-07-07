@@ -1,4 +1,4 @@
-import { Prisma, Role, SenderType } from '@prisma/client';
+import { Prisma, Role, SenderType, TicketStatus } from '@prisma/client';
 import { generateText } from 'ai';
 import { ticketListQuerySchema, updateTicketSchema } from 'core';
 import { Router } from 'express';
@@ -25,7 +25,12 @@ ticketsRouter.get('/', async (req, res) => {
 		ticketListQuerySchema.parse(req.query);
 
 	const where: Prisma.TicketWhereInput = {
-		...(status && { status }),
+		// While a ticket is `new`/`processing` the auto-resolve job (see
+		// `server/src/lib/auto-resolve-ticket.ts`) hasn't settled it into a
+		// state an agent should act on yet, so it's hidden from the list
+		// entirely — even the explicit status filter below can't reach it,
+		// since `statusFilterValues` in `core` only covers the settled states.
+		status: status ?? { notIn: [TicketStatus.new, TicketStatus.processing] },
 		...(category && {
 			category: category === 'uncategorized' ? null : category,
 		}),

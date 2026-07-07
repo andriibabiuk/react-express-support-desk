@@ -101,7 +101,8 @@
       "PowerShell(Get-NetTCPConnection -LocalPort 4000 -State Listen -ErrorAction SilentlyContinue)",
       "Bash(git -C d:/workdir/react-express-support-desk diff core/src/schemas/ticket.ts)",
       "Bash(git stash *)",
-      "Bash(bun remove *)"
+      "Bash(bun remove *)",
+      "Bash(bunx playwright *)"
     ],
     "additionalDirectories": [
       "\\tmp"

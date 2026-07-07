@@ -8,9 +8,11 @@ import {
 	CATEGORY_LABEL,
 	STATUS_BADGE_VARIANT,
 	STATUS_LABEL,
+	statusFilterValues,
 	TicketCategory,
 	TicketStatus,
 	type Ticket,
+	type TicketStatusFilter,
 	type UpdateTicketInput,
 } from 'core';
 
@@ -22,13 +24,16 @@ async function updateTicket({
 	return res.data as Ticket;
 }
 
-const STATUS_SELECT_OPTIONS: BadgeSelectOption<TicketStatus>[] = Object.values(
-	TicketStatus,
-).map(status => ({
-	value: status,
-	label: STATUS_LABEL[status],
-	badgeVariant: STATUS_BADGE_VARIANT[status],
-}));
+// `statusFilterValues` (`open`/`resolved`/`closed`) deliberately excludes
+// `new`/`processing` — those are internal states driven by the auto-resolve
+// job (see `server/src/lib/auto-resolve-ticket.ts`), not something an agent
+// sets by hand.
+const STATUS_SELECT_OPTIONS: BadgeSelectOption<TicketStatusFilter>[] =
+	statusFilterValues.map(status => ({
+		value: status,
+		label: STATUS_LABEL[status as TicketStatus],
+		badgeVariant: STATUS_BADGE_VARIANT[status as TicketStatus],
+	}));
 
 type CategorySelectValue = TicketCategory | 'uncategorized';
 const UNCATEGORIZED = 'uncategorized' satisfies CategorySelectValue;
@@ -76,7 +81,7 @@ export function UpdateTicket({
 					<dt className='text-muted-foreground'>Status</dt>
 					<dd>
 						<BadgeSelect
-							value={status}
+							value={status as TicketStatusFilter}
 							options={STATUS_SELECT_OPTIONS}
 							onValueChange={status => updateTicketMutate({ id: ticketId, status })}
 						/>
