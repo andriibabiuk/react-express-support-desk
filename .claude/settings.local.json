@@ -107,7 +107,15 @@
       "Bash(curl -s -b cookies.txt http://localhost:4000/api/tickets/stats)",
       "Skill(dataviz)",
       "Skill(dataviz:*)",
-      "Bash(bunx oxlint *)"
+      "Bash(bunx oxlint *)",
+      "Bash(ls .claude/skills/)",
+      "Bash(ls .agents/skills/)",
+      "Bash(npx vite *)",
+      "Bash(nohup npx vite --port 5183)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5183/)",
+      "Bash(curl -s http://localhost:5183/)",
+      "Bash(curl -s http://localhost:5183/src/index.css)"
     ],
     "additionalDirectories": [
       "\\tmp"

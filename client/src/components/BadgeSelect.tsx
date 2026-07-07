@@ -11,6 +11,7 @@ export interface BadgeSelectOption<T extends string> {
 	value: T;
 	label: string;
 	badgeVariant: 'default' | 'secondary' | 'outline' | 'destructive';
+	badgeClassName?: string;
 }
 
 export function BadgeSelect<T extends string>({
@@ -27,7 +28,10 @@ export function BadgeSelect<T extends string>({
 	return (
 		<Select value={value} onValueChange={v => onValueChange(v as T)}>
 			<SelectTrigger className='h-auto w-full gap-1.5 border-none bg-transparent p-0 font-medium focus:ring-0'>
-				<Badge variant={selected?.badgeVariant ?? 'outline'}>
+				<Badge
+					variant={selected?.badgeVariant ?? 'outline'}
+					className={selected?.badgeClassName}
+				>
 					<SelectValue />
 				</Badge>
 			</SelectTrigger>

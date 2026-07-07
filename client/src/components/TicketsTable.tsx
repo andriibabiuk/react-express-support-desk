@@ -58,6 +58,12 @@ export type TicketListItem = Pick<
 	| 'createdAt'
 >;
 
+// `resolved` gets its own green accent — the shared `secondary` badge variant
+// otherwise reads as neutral gray (see the matching map in UpdateTicket.tsx).
+const STATUS_ACCENT_CLASS: Partial<Record<TicketStatus, string>> = {
+	[TicketStatus.resolved]: 'bg-status-resolved/15 text-status-resolved border-status-resolved/30',
+};
+
 const SKELETON_ROWS = 5;
 
 // Fixed per-column widths (paired with `table-fixed` below) so the skeleton
@@ -65,6 +71,7 @@ const SKELETON_ROWS = 5;
 // swaps, so nothing reflows/jumps when the data arrives. Keyed by column id,
 // which for every column below is just its `Ticket` accessor key.
 const COLUMN_WIDTH: Record<string, string> = {
+	id: 'w-16',
 	subject: 'w-56',
 	senderName: 'w-32',
 	senderEmail: 'w-56',
@@ -86,6 +93,15 @@ export function formatDate(value: string) {
 const columnHelper = createColumnHelper<TicketListItem>();
 
 const columns = [
+	columnHelper.accessor('id', {
+		header: 'ID',
+		enableSorting: false,
+		cell: info => (
+			<span className='font-mono text-xs text-muted-foreground'>
+				#{info.getValue()}
+			</span>
+		),
+	}),
 	columnHelper.accessor('subject', {
 		header: 'Subject',
 		cell: info => (
@@ -105,7 +121,10 @@ const columns = [
 	columnHelper.accessor('status', {
 		header: 'Status',
 		cell: info => (
-			<Badge variant={STATUS_BADGE_VARIANT[info.getValue()]}>
+			<Badge
+				variant={STATUS_BADGE_VARIANT[info.getValue()]}
+				className={STATUS_ACCENT_CLASS[info.getValue()]}
+			>
 				{STATUS_LABEL[info.getValue()]}
 			</Badge>
 		),
@@ -322,6 +341,9 @@ export function TicketsTable() {
 						{Array.from({ length: SKELETON_ROWS }, (_, i) => (
 							<TableRow key={i}>
 								<TableCell>
+									<Skeleton className='h-4 w-10' />
+								</TableCell>
+								<TableCell>
 									<Skeleton className='h-4 w-48' />
 								</TableCell>
 								<TableCell>
@@ -352,7 +374,14 @@ export function TicketsTable() {
 					<TicketsTableHeader table={table} />
 					<TableBody>
 						{table.getRowModel().rows.map(row => (
-							<TableRow key={row.id}>
+							<TableRow
+								key={row.id}
+								className={
+									row.original.status === TicketStatus.open
+										? 'border-l-2 border-l-primary'
+										: 'border-l-2 border-l-transparent'
+								}
+							>
 								{row.getVisibleCells().map(cell => (
 									<TableCell
 										key={cell.id}

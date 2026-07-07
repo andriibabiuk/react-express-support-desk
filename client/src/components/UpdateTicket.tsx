@@ -28,11 +28,19 @@ async function updateTicket({
 // `new`/`processing` — those are internal states driven by the auto-resolve
 // job (see `server/src/lib/auto-resolve-ticket.ts`), not something an agent
 // sets by hand.
+// `resolved` gets its own green accent class — the shared `secondary` badge
+// variant reads as neutral gray, but a resolved ticket is a distinct signal
+// from "not yet categorized" secondary badges elsewhere.
+const STATUS_ACCENT_CLASS: Partial<Record<TicketStatus, string>> = {
+	[TicketStatus.resolved]: 'bg-status-resolved/15 text-status-resolved border-status-resolved/30',
+};
+
 const STATUS_SELECT_OPTIONS: BadgeSelectOption<TicketStatusFilter>[] =
 	statusFilterValues.map(status => ({
 		value: status,
 		label: STATUS_LABEL[status as TicketStatus],
 		badgeVariant: STATUS_BADGE_VARIANT[status as TicketStatus],
+		badgeClassName: STATUS_ACCENT_CLASS[status as TicketStatus],
 	}));
 
 type CategorySelectValue = TicketCategory | 'uncategorized';

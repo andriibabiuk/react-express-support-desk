@@ -21,8 +21,16 @@ const statusLabel = {
 
 const statusVariant = {
 	checking: 'secondary',
-	ok: 'default',
+	ok: 'outline',
 	error: 'destructive',
+} as const;
+
+// `default` (amber) is reserved for "needs a human" signals, so a healthy
+// API status gets its own green treatment instead via `outline` + className.
+const statusClassName = {
+	checking: '',
+	ok: 'border-status-resolved/40 text-status-resolved',
+	error: '',
 } as const;
 
 // Formats a duration in milliseconds as e.g. "2d 5h", "3h 24m", "12m" —
@@ -44,9 +52,14 @@ function formatDuration(ms: number): string {
 const STAT_TILES: {
 	label: string;
 	value: (stats: TicketStats) => string;
+	signal?: boolean;
 }[] = [
 	{ label: 'Total tickets', value: stats => stats.totalTickets.toLocaleString() },
-	{ label: 'Open tickets', value: stats => stats.openTickets.toLocaleString() },
+	{
+		label: 'Open tickets',
+		value: stats => stats.openTickets.toLocaleString(),
+		signal: true,
+	},
 	{
 		label: 'Resolved by AI',
 		value: stats => stats.resolvedByAiCount.toLocaleString(),
@@ -71,16 +84,32 @@ function DashboardStats() {
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-2 gap-4 lg:grid-cols-5'>
+			<div className='grid grid-cols-2 gap-3 lg:grid-cols-5'>
 				{STAT_TILES.map(tile => (
-					<Card key={tile.label} size='sm'>
+					<Card
+						key={tile.label}
+						size='sm'
+						className={
+							tile.signal ? 'border-primary/40 shadow-[0_0_0_1px_var(--primary)]' : undefined
+						}
+					>
 						<CardHeader>
-							<CardDescription>{tile.label}</CardDescription>
+							<CardDescription className='text-xs tracking-wide uppercase'>
+								{tile.label}
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							{isPending && <Skeleton className='h-8 w-16' />}
+							{isPending && <Skeleton className='h-9 w-16' />}
 							{isError && <span className='text-sm text-destructive'>—</span>}
-							{data && <p className='text-2xl font-medium'>{tile.value(data)}</p>}
+							{data && (
+								<p
+									className={`font-heading text-3xl font-medium tabular-nums ${
+										tile.signal ? 'text-primary' : ''
+									}`}
+								>
+									{tile.value(data)}
+								</p>
+							)}
 						</CardContent>
 					</Card>
 				))}
@@ -112,7 +141,9 @@ export function HomePage() {
 				</CardHeader>
 				<CardContent className='flex items-center gap-2'>
 					<span className='text-sm text-muted-foreground'>API status</span>
-					<Badge variant={statusVariant[status]}>{statusLabel[status]}</Badge>
+					<Badge variant={statusVariant[status]} className={statusClassName[status]}>
+						{statusLabel[status]}
+					</Badge>
 				</CardContent>
 			</Card>
 			<DashboardStats />

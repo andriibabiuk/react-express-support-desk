@@ -44,63 +44,73 @@ export function LoginPage() {
 
 	return (
 		<main className='flex flex-1 items-center justify-center p-6'>
-			<Card className='w-full max-w-sm'>
-				<CardHeader>
-					<h1 className='font-heading text-2xl leading-snug font-medium'>Sign in</h1>
-					<CardDescription>Enter your email and password to continue</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form onSubmit={onSubmit} noValidate>
-						<FieldGroup>
-							<Controller
-								name='email'
-								control={control}
-								render={({ field, fieldState }) => (
-									<Field data-invalid={fieldState.invalid}>
-										<FieldLabel htmlFor={field.name}>Email</FieldLabel>
-										<Input
-											{...field}
-											id={field.name}
-											type='email'
-											autoComplete='email'
-											aria-invalid={fieldState.invalid}
-										/>
-										{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-									</Field>
+			<div className='w-full max-w-sm'>
+				<div className='mb-6 flex items-center gap-2.5'>
+					<span className='flex size-8 shrink-0 items-center justify-center rounded-md bg-primary font-heading text-sm font-semibold text-primary-foreground'>
+						SD
+					</span>
+					<span className='font-heading text-sm font-medium tracking-wide'>
+						Support&nbsp;Desk
+					</span>
+				</div>
+				<Card className='w-full'>
+					<CardHeader>
+						<h1 className='font-heading text-2xl leading-snug font-medium'>Sign in</h1>
+						<CardDescription>Enter your email and password to continue</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<form onSubmit={onSubmit} noValidate>
+							<FieldGroup>
+								<Controller
+									name='email'
+									control={control}
+									render={({ field, fieldState }) => (
+										<Field data-invalid={fieldState.invalid}>
+											<FieldLabel htmlFor={field.name}>Email</FieldLabel>
+											<Input
+												{...field}
+												id={field.name}
+												type='email'
+												autoComplete='email'
+												aria-invalid={fieldState.invalid}
+											/>
+											{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+										</Field>
+									)}
+								/>
+
+								<Controller
+									name='password'
+									control={control}
+									render={({ field, fieldState }) => (
+										<Field data-invalid={fieldState.invalid}>
+											<FieldLabel htmlFor={field.name}>Password</FieldLabel>
+											<Input
+												{...field}
+												id={field.name}
+												type='password'
+												autoComplete='current-password'
+												aria-invalid={fieldState.invalid}
+											/>
+											{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+										</Field>
+									)}
+								/>
+
+								{errors.root && (
+									<FieldError>{errors.root.message}</FieldError>
 								)}
-							/>
 
-							<Controller
-								name='password'
-								control={control}
-								render={({ field, fieldState }) => (
-									<Field data-invalid={fieldState.invalid}>
-										<FieldLabel htmlFor={field.name}>Password</FieldLabel>
-										<Input
-											{...field}
-											id={field.name}
-											type='password'
-											autoComplete='current-password'
-											aria-invalid={fieldState.invalid}
-										/>
-										{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-									</Field>
-								)}
-							/>
-
-							{errors.root && (
-								<FieldError>{errors.root.message}</FieldError>
-							)}
-
-							<Field>
-								<Button type='submit' disabled={isSubmitting}>
-									{isSubmitting ? 'Signing in…' : 'Sign in'}
-								</Button>
-							</Field>
-						</FieldGroup>
-					</form>
-				</CardContent>
-			</Card>
+								<Field>
+									<Button type='submit' disabled={isSubmitting}>
+										{isSubmitting ? 'Signing in…' : 'Sign in'}
+									</Button>
+								</Field>
+							</FieldGroup>
+						</form>
+					</CardContent>
+				</Card>
+			</div>
 		</main>
 	);
 }

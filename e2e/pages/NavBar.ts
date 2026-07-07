@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test';
 
 /**
- * The NavBar is rendered by ProtectedRoute on every authenticated page
- * (client/src/components/NavBar.tsx), so it's modeled as a small component
+ * The nav is rendered by ProtectedRoute on every authenticated page
+ * (client/src/components/Sidebar.tsx), so it's modeled as a small component
  * object composed into each page object rather than duplicated.
  */
 export class NavBar {

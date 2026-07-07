@@ -1,25 +1,25 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '../lib/auth-client';
-import { NavBar } from './NavBar';
+import { Sidebar } from './Sidebar';
 
 export function ProtectedRoute() {
 	const { data: session, isPending } = useAuth();
 
 	if (isPending) {
 		return (
-			<>
-				<nav className='flex items-center justify-between border-b border-border px-6 py-4'>
-					<Skeleton className='h-6 w-28' />
-					<div className='flex items-center gap-3'>
-						<Skeleton className='size-8 rounded-full' />
-						<Skeleton className='h-4 w-20' />
+			<div className='flex flex-1'>
+				<div className='flex w-16 shrink-0 flex-col gap-4 border-r border-sidebar-border bg-sidebar p-3 md:w-56'>
+					<Skeleton className='h-7 w-7 rounded-md md:w-32' />
+					<div className='flex flex-1 flex-col gap-2'>
+						<Skeleton className='h-8 w-full' />
+						<Skeleton className='h-8 w-full' />
 					</div>
-				</nav>
+				</div>
 				<div className='flex flex-1 items-center justify-center p-6'>
 					<Skeleton className='h-48 w-full max-w-sm' />
 				</div>
-			</>
+			</div>
 		);
 	}
 
@@ -28,9 +28,11 @@ export function ProtectedRoute() {
 	}
 
 	return (
-		<>
-			<NavBar />
-			<Outlet />
-		</>
+		<div className='flex flex-1'>
+			<Sidebar />
+			<div className='flex flex-1 flex-col overflow-x-hidden'>
+				<Outlet />
+			</div>
+		</div>
 	);
 }
