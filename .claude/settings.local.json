@@ -36,7 +36,11 @@
       "Bash(find /d/workdir/react-express-support-desk/node_modules/.bun/better-auth@1.6.23+2b7b9210b6f9d945/node_modules/better-auth -iname *internal-adapter*)",
       "Bash(npx tsc *)",
       "Bash(npx playwright *)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(disown)",
+      "Read(//tmp/**)"
     ]
   }
 }

@@ -1,10 +1,13 @@
 import { Router } from 'express';
+import { ticketListQuerySchema } from 'core';
 import { prisma } from '../lib/prisma.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
 
 export const ticketsRouter = Router();
 
-ticketsRouter.get('/', requireAuth, async (_req, res) => {
+ticketsRouter.get('/', requireAuth, async (req, res) => {
+	const { sortBy, sortOrder } = ticketListQuerySchema.parse(req.query);
+
 	const tickets = await prisma.ticket.findMany({
 		select: {
 			id: true,
@@ -15,7 +18,7 @@ ticketsRouter.get('/', requireAuth, async (_req, res) => {
 			category: true,
 			createdAt: true,
 		},
-		orderBy: { createdAt: 'desc' },
+		orderBy: { [sortBy]: sortOrder },
 	});
 	res.json({ tickets });
 });

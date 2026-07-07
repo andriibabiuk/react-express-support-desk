@@ -8,7 +8,8 @@
     "start": "bun index.ts",
     "postinstall": "prisma generate",
     "migrate": "prisma migrate dev",
-    "seed": "bun run prisma/seed.ts"
+    "seed": "bun run prisma/seed.ts",
+    "seed:tickets": "bun run prisma/seed-tickets.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

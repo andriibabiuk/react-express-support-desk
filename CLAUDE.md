@@ -242,11 +242,11 @@ enough to persist a ticket, not the full CRUD/UI:
 
 ### Ticket list
 
-`GET /api/tickets` (`server/src/routes/tickets.ts`) lists tickets ordered
-`createdAt: 'desc'` (newest first) — this is the one piece of Phase 4 (Ticket
-CRUD) that exists so far, alongside the ticket creation that already happens
-via [Email ingestion](#email-ingestion). No detail/update/delete/assign
-endpoints yet.
+`GET /api/tickets` (`server/src/routes/tickets.ts`) lists tickets, sorted
+server-side — this is the one piece of Phase 4 (Ticket CRUD) that exists so
+far, alongside the ticket creation that already happens via
+[Email ingestion](#email-ingestion). No detail/update/delete/assign endpoints
+yet.
 
 - Unlike `/api/users`, this is gated by `requireAuth` only, **not**
   `requireAdmin` — per `project-scope.md`, agents (not just admins) need to
@@ -263,6 +263,20 @@ endpoints yet.
 - No create/edit/delete UI on this page — tickets are only ever created via
   email ingestion right now, so there's nothing analogous to `UserDialog`'s
   create mode here.
+- **Sorting** is server-side, not client-side: `GET /api/tickets` takes
+  `sortBy` (one of `subject`, `senderName`, `senderEmail`, `status`,
+  `category`, `createdAt` — validated against that whitelist, falling back to
+  `createdAt` for anything else) and `sortOrder` (`asc`/`desc`, falling back
+  to `desc`), fed straight into Prisma's `orderBy`. `TicketsTable.tsx` uses
+  **`@tanstack/react-table`** (`useReactTable`, `manualSorting: true`,
+  `enableMultiSort: false`) purely as headless column/header-clicking
+  plumbing — it never sorts rows itself; `sorting` (`SortingState`, one
+  entry at most) lives in `useState`, drives the `useQuery` key and the
+  `sortBy`/`sortOrder` params, and the server's response order is rendered
+  as-is via `getCoreRowModel()` (no `getSortedRowModel()`). Column ids are
+  the `Ticket` accessor keys themselves (e.g. `senderName`), so a header
+  click's column id can be passed directly as `sortBy` with no extra mapping
+  layer.
 
 ## Versions in use
 
