@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import axios from 'axios';
-import { TicketCategory, TicketStatus } from 'core';
+import { defaultPageSize, TicketCategory, TicketStatus } from 'core';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { renderWithQuery } from '../test/utils';
 import { TicketsTable } from './TicketsTable';
@@ -37,6 +37,14 @@ const TICKETS = [
 	},
 ];
 
+const PAGINATION = { page: 1, pageSize: defaultPageSize, total: TICKETS.length, totalPages: 1 };
+
+function mockTicketsResponse(overrides?: Partial<typeof PAGINATION>) {
+	mockedGet.mockResolvedValue({
+		data: { tickets: TICKETS, pagination: { ...PAGINATION, ...overrides } },
+	});
+}
+
 function expectedDate(value: string) {
 	return new Date(value).toLocaleDateString(undefined, {
 		year: 'numeric',
@@ -61,7 +69,7 @@ describe('TicketsTable', () => {
 	});
 
 	it('renders the ticket list once the request resolves, newest first as returned by the API', async () => {
-		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+		mockTicketsResponse();
 
 		renderWithQuery(<TicketsTable />);
 
@@ -102,19 +110,26 @@ describe('TicketsTable', () => {
 	});
 
 	it('requests all tickets with no status/category filter by default', async () => {
-		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+		mockTicketsResponse();
 
 		renderWithQuery(<TicketsTable />);
 
 		await screen.findByText('Refund question');
 
 		expect(mockedGet).toHaveBeenCalledWith('/api/tickets', {
-			params: { sortBy: 'createdAt', sortOrder: 'desc', status: undefined, category: undefined },
+			params: {
+				sortBy: 'createdAt',
+				sortOrder: 'desc',
+				status: undefined,
+				category: undefined,
+				page: 1,
+				pageSize: defaultPageSize,
+			},
 		});
 	});
 
 	it('refetches with the chosen status when a status filter is selected', async () => {
-		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+		mockTicketsResponse();
 
 		renderWithQuery(<TicketsTable />);
 		await screen.findByText('Refund question');
@@ -123,13 +138,20 @@ describe('TicketsTable', () => {
 
 		await waitFor(() => {
 			expect(mockedGet).toHaveBeenLastCalledWith('/api/tickets', {
-				params: { sortBy: 'createdAt', sortOrder: 'desc', status: 'resolved', category: undefined },
+				params: {
+					sortBy: 'createdAt',
+					sortOrder: 'desc',
+					status: 'resolved',
+					category: undefined,
+					page: 1,
+					pageSize: defaultPageSize,
+				},
 			});
 		});
 	});
 
 	it('refetches with the chosen category when a category filter is selected', async () => {
-		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+		mockTicketsResponse();
 
 		renderWithQuery(<TicketsTable />);
 		await screen.findByText('Refund question');
@@ -143,13 +165,15 @@ describe('TicketsTable', () => {
 					sortOrder: 'desc',
 					status: undefined,
 					category: 'uncategorized',
+					page: 1,
+					pageSize: defaultPageSize,
 				},
 			});
 		});
 	});
 
 	it('debounces the search box before refetching with the typed term', async () => {
-		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+		mockTicketsResponse();
 
 		renderWithQuery(<TicketsTable />);
 		await screen.findByText('Refund question');
@@ -172,6 +196,77 @@ describe('TicketsTable', () => {
 					status: undefined,
 					category: undefined,
 					search: 'refund',
+					page: 1,
+					pageSize: defaultPageSize,
+				},
+			});
+		});
+	});
+
+	it('shows the ticket count and page indicator, with Previous disabled on the first page', async () => {
+		mockTicketsResponse({ page: 1, total: 45, totalPages: 3 });
+
+		renderWithQuery(<TicketsTable />);
+		await screen.findByText('Refund question');
+
+		expect(screen.getByText('45 tickets')).toBeInTheDocument();
+		expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+	});
+
+	it('requests the next page when Next is clicked, and disables Next on the last page', async () => {
+		mockTicketsResponse({ page: 1, total: 45, totalPages: 3 });
+
+		renderWithQuery(<TicketsTable />);
+		await screen.findByText('Refund question');
+
+		mockTicketsResponse({ page: 2, total: 45, totalPages: 3 });
+		fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+		await waitFor(() => {
+			expect(mockedGet).toHaveBeenLastCalledWith('/api/tickets', {
+				params: {
+					sortBy: 'createdAt',
+					sortOrder: 'desc',
+					status: undefined,
+					category: undefined,
+					page: 2,
+					pageSize: defaultPageSize,
+				},
+			});
+		});
+		expect(await screen.findByText('Page 2 of 3')).toBeInTheDocument();
+
+		mockTicketsResponse({ page: 3, total: 45, totalPages: 3 });
+		fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+		expect(await screen.findByText('Page 3 of 3')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+	});
+
+	it('resets to page 1 when a filter changes', async () => {
+		mockTicketsResponse({ page: 1, total: 45, totalPages: 3 });
+
+		renderWithQuery(<TicketsTable />);
+		await screen.findByText('Refund question');
+
+		mockTicketsResponse({ page: 2, total: 45, totalPages: 3 });
+		fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+		await screen.findByText('Page 2 of 3');
+
+		mockTicketsResponse({ page: 1, total: 3, totalPages: 1 });
+		selectOption('Status', 'Resolved');
+
+		await waitFor(() => {
+			expect(mockedGet).toHaveBeenLastCalledWith('/api/tickets', {
+				params: {
+					sortBy: 'createdAt',
+					sortOrder: 'desc',
+					status: 'resolved',
+					category: undefined,
+					page: 1,
+					pageSize: defaultPageSize,
 				},
 			});
 		});

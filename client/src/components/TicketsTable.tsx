@@ -5,13 +5,22 @@ import {
 	flexRender,
 	getCoreRowModel,
 	useReactTable,
+	type PaginationState,
 	type SortingState,
 	type Table as ReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { TicketCategory, TicketStatus, type TicketCategoryFilter, type TicketSortField, type TicketStatusFilter } from 'core';
+import {
+	defaultPageSize,
+	TicketCategory,
+	TicketStatus,
+	type TicketCategoryFilter,
+	type TicketSortField,
+	type TicketStatusFilter,
+} from 'core';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
 	Select,
@@ -176,8 +185,28 @@ export function TicketsTable() {
 		return () => clearTimeout(timeout);
 	}, [search]);
 
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: defaultPageSize,
+	});
+	// Any change to sort/filter/search invalidates the current page number —
+	// e.g. page 5 of "all tickets" may not exist once a filter narrows the
+	// result set down to 1 page.
+	useEffect(() => {
+		setPagination(prev => ({ ...prev, pageIndex: 0 }));
+	}, [sortBy, sortOrder, statusFilter, categoryFilter, debouncedSearch]);
+
 	const { data, isPending, isError } = useQuery({
-		queryKey: ['tickets', sortBy, sortOrder, statusFilter, categoryFilter, debouncedSearch],
+		queryKey: [
+			'tickets',
+			sortBy,
+			sortOrder,
+			statusFilter,
+			categoryFilter,
+			debouncedSearch,
+			pagination.pageIndex,
+			pagination.pageSize,
+		],
 		queryFn: () =>
 			axios
 				.get('/api/tickets', {
@@ -187,20 +216,31 @@ export function TicketsTable() {
 						status: statusFilter === ALL ? undefined : statusFilter,
 						category: categoryFilter === ALL ? undefined : categoryFilter,
 						search: debouncedSearch || undefined,
+						page: pagination.pageIndex + 1,
+						pageSize: pagination.pageSize,
 					},
 				})
-				.then(res => res.data.tickets as Ticket[]),
+				.then(
+					res =>
+						res.data as {
+							tickets: Ticket[];
+							pagination: { page: number; pageSize: number; total: number; totalPages: number };
+						},
+				),
 	});
 
-	const rows = useMemo(() => data ?? [], [data]);
+	const rows = useMemo(() => data?.tickets ?? [], [data]);
 
 	const table = useReactTable({
 		data: rows,
 		columns,
-		state: { sorting },
+		state: { sorting, pagination },
 		onSortingChange: setSorting,
+		onPaginationChange: setPagination,
 		enableMultiSort: false,
 		manualSorting: true,
+		manualPagination: true,
+		pageCount: data?.pagination.totalPages ?? -1,
 		getCoreRowModel: getCoreRowModel(),
 	});
 
@@ -292,6 +332,36 @@ export function TicketsTable() {
 						))}
 					</TableBody>
 				</Table>
+			)}
+			{data && (
+				<div className='mt-3 flex items-center justify-between'>
+					<p className='text-sm text-muted-foreground'>
+						{data.pagination.total} ticket{data.pagination.total === 1 ? '' : 's'}
+					</p>
+					<div className='flex items-center gap-2'>
+						<Button
+							type='button'
+							variant='outline'
+							size='sm'
+							onClick={() => table.previousPage()}
+							disabled={!table.getCanPreviousPage()}
+						>
+							Previous
+						</Button>
+						<span className='text-sm text-muted-foreground'>
+							Page {data.pagination.page} of {data.pagination.totalPages}
+						</span>
+						<Button
+							type='button'
+							variant='outline'
+							size='sm'
+							onClick={() => table.nextPage()}
+							disabled={!table.getCanNextPage()}
+						>
+							Next
+						</Button>
+					</div>
+				</div>
 			)}
 		</>
 	);

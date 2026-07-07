@@ -30,6 +30,9 @@ export const categoryFilterValues = [
 ] as const;
 export type TicketCategoryFilter = (typeof categoryFilterValues)[number];
 
+export const defaultPageSize = 10;
+const maxPageSize = 100;
+
 export const ticketListQuerySchema = z.object({
 	sortBy: z.enum(sortableColumns).catch('createdAt'),
 	sortOrder: z.enum(['asc', 'desc']).catch('desc'),
@@ -46,5 +49,9 @@ export const ticketListQuerySchema = z.object({
 		.optional()
 		.catch(undefined)
 		.transform(value => (value ? value : undefined)),
+	// 1-indexed, matching the page number shown to the user — `server/src/routes/tickets.ts`
+	// converts to Prisma's 0-indexed `skip`/`take`.
+	page: z.coerce.number().int().min(1).catch(1),
+	pageSize: z.coerce.number().int().min(1).max(maxPageSize).catch(defaultPageSize),
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;

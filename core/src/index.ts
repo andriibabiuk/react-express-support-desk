@@ -10,6 +10,7 @@ export {
 	sortableColumns,
 	statusFilterValues,
 	categoryFilterValues,
+	defaultPageSize,
 	ticketListQuerySchema,
 	type TicketSortField,
 	type TicketStatusFilter,

@@ -47,7 +47,15 @@
       "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=MARIA\")",
       "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=refund&status=open\")",
       "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=zzzznonexistent\")",
-      "Bash(rm -f /tmp/cookies5.txt /tmp/server-dev5.log 2>&1)"
+      "Bash(rm -f /tmp/cookies5.txt /tmp/server-dev5.log 2>&1)",
+      "Bash(bunx --bun shadcn@latest view pagination)",
+      "Bash(curl -s -c cookies6.txt -X POST http://localhost:4000/api/auth/sign-in/email -H 'Content-Type: application/json' -d '{\"email\":\"agent@example.com\",\"password\":\"password123\"}' -o /dev/null -w 'signin: %{http_code}\\\\n')",
+      "Bash(curl -s -b cookies6.txt \"http://localhost:4000/api/tickets\")",
+      "Bash(curl -s -b cookies6.txt \"http://localhost:4000/api/tickets?page=2&pageSize=10\")",
+      "Bash(curl -s -b cookies6.txt \"http://localhost:4000/api/tickets?page=999&pageSize=10\")",
+      "Bash(curl -s -b cookies6.txt \"http://localhost:4000/api/tickets?status=closed&pageSize=5\")",
+      "Bash(curl -s -c cookies7.txt -X POST http://localhost:4000/api/auth/sign-in/email -H 'Content-Type: application/json' -d '{\"email\":\"agent@example.com\",\"password\":\"password123\"}' -o /dev/null -w 'signin: %{http_code}\\\\n')",
+      "Bash(curl -s -b cookies7.txt \"http://localhost:4000/api/tickets\")"
     ],
     "additionalDirectories": [
       "\\tmp"

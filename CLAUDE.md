@@ -319,6 +319,24 @@ yet.
     codebase) before it lands in `debouncedSearch`, which is what actually
     drives the `useQuery` key/params; the raw, undebounced `search` state
     only drives the input's own `value` so typing itself never stutters.
+  - **Pagination** is also server-side: `page` (1-indexed, matching what's
+    shown to the user — `.catch(1)`) and `pageSize` (`.catch(defaultPageSize)`,
+    10, capped at 100) become Prisma's `skip`/`take` on the same `where`.
+    `GET /api/tickets` runs the `findMany` and a `prisma.ticket.count(where)`
+    in a `Promise.all`, returning `{ tickets, pagination: { page, pageSize,
+    total, totalPages } }` instead of a bare `{ tickets }` array — a page
+    number past the end returns `tickets: []` rather than erroring, since
+    `skip` beyond the row count is a valid (empty) Prisma query, not a fault.
+    `TicketsTable.tsx` again uses `@tanstack/react-table` (`manualPagination:
+    true`, `pageCount` from the response's `totalPages`) purely for its
+    `previousPage()`/`nextPage()`/`getCanPreviousPage()`/`getCanNextPage()`
+    bookkeeping off `PaginationState` — no `getPaginationRowModel()`, since
+    the server already returns exactly one page's worth of rows, not the
+    full set to slice client-side. Changing `sorting`, `statusFilter`,
+    `categoryFilter`, or `debouncedSearch` resets `pagination.pageIndex` back
+    to `0` (via a `useEffect` watching all four), since e.g. page 5 of the
+    unfiltered list may not exist once a filter narrows the result set down
+    to one page.
 
 ## Versions in use
 
