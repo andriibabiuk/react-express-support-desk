@@ -16,6 +16,8 @@ export {
 	type TicketStatusFilter,
 	type TicketCategoryFilter,
 	type TicketListQuery,
+	assignTicketSchema,
+	type AssignTicketInput,
 } from './schemas/ticket.ts';
 export { Role } from './constants/role.ts';
 export { TicketCategory } from './constants/ticket-category.ts';

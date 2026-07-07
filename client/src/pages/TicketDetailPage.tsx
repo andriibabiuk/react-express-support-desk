@@ -3,6 +3,7 @@ import axios from 'axios';
 import { TicketCategory, TicketStatus } from 'core';
 import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { TicketAssigneeSelect } from '@/components/TicketAssigneeSelect';
 import {
 	CATEGORY_LABEL,
 	formatDate,
@@ -87,7 +88,12 @@ export function TicketDetailPage() {
 								{ticket.senderName} &lt;{ticket.senderEmail}&gt;
 							</dd>
 							<dt className='text-muted-foreground'>Assigned to</dt>
-							<dd>{ticket.assignedTo ? ticket.assignedTo.name : 'Unassigned'}</dd>
+							<dd>
+								<TicketAssigneeSelect
+									ticketId={ticket.id}
+									assignedToId={ticket.assignedTo?.id ?? null}
+								/>
+							</dd>
 							<dt className='text-muted-foreground'>Created</dt>
 							<dd>{formatDate(ticket.createdAt)}</dd>
 							<dt className='text-muted-foreground'>Updated</dt>

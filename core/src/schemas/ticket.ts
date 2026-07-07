@@ -55,3 +55,10 @@ export const ticketListQuerySchema = z.object({
 	pageSize: z.coerce.number().int().min(1).max(maxPageSize).catch(defaultPageSize),
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;
+
+// `null` unassigns the ticket; a non-null value must be an existing, active
+// user's id — `server/src/routes/tickets.ts`'s PATCH handler checks that.
+export const assignTicketSchema = z.object({
+	assignedToId: z.string().min(1, 'assignedToId is required').nullable(),
+});
+export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
