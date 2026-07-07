@@ -1,6 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { useState } from 'react';
 import {
 	Select,
 	SelectContent,
@@ -8,6 +5,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { useState } from 'react';
 
 interface Assignee {
 	id: string;
@@ -30,13 +30,17 @@ export function TicketAssigneeSelect({
 	const { data } = useQuery({
 		queryKey: ['ticket-assignees'],
 		queryFn: () =>
-			axios.get('/api/tickets/assignees').then(res => res.data.assignees as Assignee[]),
+			axios
+				.get('/api/tickets/assignees')
+				.then(res => res.data.assignees as Assignee[]),
 	});
 	const assignees = data ?? [];
 
 	const assign = useMutation({
 		mutationFn: (nextAssignedToId: string | null) =>
-			axios.patch(`/api/tickets/${ticketId}`, { assignedToId: nextAssignedToId }),
+			axios.patch(`/api/tickets/${ticketId}`, {
+				assignedToId: nextAssignedToId,
+			}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['ticket', String(ticketId)] });
 		},
@@ -48,7 +52,8 @@ export function TicketAssigneeSelect({
 		assign.mutate(nextAssignedToId, {
 			onError: err => {
 				const message =
-					axios.isAxiosError(err) && typeof err.response?.data?.error === 'string'
+					axios.isAxiosError(err) &&
+					typeof err.response?.data?.error === 'string'
 						? (err.response.data.error as string)
 						: 'Failed to assign ticket.';
 				setError(message);
@@ -63,7 +68,7 @@ export function TicketAssigneeSelect({
 				onValueChange={handleChange}
 				disabled={assign.isPending}
 			>
-				<SelectTrigger size='sm' className='w-56' aria-label='Assigned to'>
+				<SelectTrigger size='sm' className='w-full' aria-label='Assigned to'>
 					<SelectValue placeholder='Unassigned' />
 				</SelectTrigger>
 				<SelectContent>

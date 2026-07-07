@@ -29,7 +29,10 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import {
+	CATEGORY_LABEL,
 	defaultPageSize,
+	STATUS_BADGE_VARIANT,
+	STATUS_LABEL,
 	TicketCategory,
 	TicketStatus,
 	type TicketCategoryFilter,
@@ -66,27 +69,6 @@ const COLUMN_WIDTH: Record<string, string> = {
 };
 
 const TRUNCATE_COLUMNS = new Set(['subject', 'senderName', 'senderEmail']);
-
-export const STATUS_BADGE_VARIANT: Record<
-	TicketStatus,
-	'default' | 'secondary' | 'outline'
-> = {
-	[TicketStatus.open]: 'default',
-	[TicketStatus.resolved]: 'secondary',
-	[TicketStatus.closed]: 'outline',
-};
-
-export const STATUS_LABEL: Record<TicketStatus, string> = {
-	[TicketStatus.open]: 'Open',
-	[TicketStatus.resolved]: 'Resolved',
-	[TicketStatus.closed]: 'Closed',
-};
-
-export const CATEGORY_LABEL: Record<TicketCategory, string> = {
-	[TicketCategory.generalQuestion]: 'General Question',
-	[TicketCategory.technicalQuestion]: 'Technical Question',
-	[TicketCategory.refundRequest]: 'Refund Request',
-};
 
 export function formatDate(value: string) {
 	return new Date(value).toLocaleDateString(undefined, {

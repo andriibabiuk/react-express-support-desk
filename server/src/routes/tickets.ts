@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { assignTicketSchema, ticketListQuerySchema } from 'core';
 import { Prisma, Role } from '@prisma/client';
+import { ticketListQuerySchema, updateTicketSchema } from 'core';
+import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
@@ -19,13 +19,14 @@ ticketsRouter.get('/assignees', requireAuth, async (_req, res) => {
 });
 
 ticketsRouter.get('/', requireAuth, async (req, res) => {
-	const { sortBy, sortOrder, status, category, search, page, pageSize } = ticketListQuerySchema.parse(
-		req.query,
-	);
+	const { sortBy, sortOrder, status, category, search, page, pageSize } =
+		ticketListQuerySchema.parse(req.query);
 
 	const where: Prisma.TicketWhereInput = {
 		...(status && { status }),
-		...(category && { category: category === 'uncategorized' ? null : category }),
+		...(category && {
+			category: category === 'uncategorized' ? null : category,
+		}),
 		...(search && {
 			OR: [
 				{ subject: { contains: search, mode: 'insensitive' } },
@@ -56,7 +57,12 @@ ticketsRouter.get('/', requireAuth, async (req, res) => {
 
 	res.json({
 		tickets,
-		pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+		pagination: {
+			page,
+			pageSize,
+			total,
+			totalPages: Math.max(1, Math.ceil(total / pageSize)),
+		},
 	});
 });
 
@@ -87,20 +93,22 @@ ticketsRouter.patch('/:id', requireAuth, async (req, res) => {
 		return;
 	}
 
-	const parsed = assignTicketSchema.safeParse(req.body);
+	const parsed = updateTicketSchema.safeParse(req.body);
 	if (!parsed.success) {
 		res.status(400).json({ error: z.prettifyError(parsed.error) });
 		return;
 	}
-	const { assignedToId } = parsed.data;
 
+	const { assignedToId } = parsed.data;
 	if (assignedToId) {
 		const assignee = await prisma.user.findUnique({
 			where: { id: assignedToId },
 			select: { role: true, deletedAt: true },
 		});
 		if (!assignee || assignee.deletedAt || assignee.role !== Role.agent) {
-			res.status(400).json({ error: 'Ticket can only be assigned to an active agent' });
+			res
+				.status(400)
+				.json({ error: 'Ticket can only be assigned to an active agent' });
 			return;
 		}
 	}
@@ -108,12 +116,17 @@ ticketsRouter.patch('/:id', requireAuth, async (req, res) => {
 	try {
 		const ticket = await prisma.ticket.update({
 			where: { id },
-			data: { assignedToId },
-			include: { assignedTo: { select: { id: true, name: true, email: true } } },
+			data: parsed.data,
+			include: {
+				assignedTo: { select: { id: true, name: true, email: true } },
+			},
 		});
 		res.json(ticket);
 	} catch (error) {
-		if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+		if (
+			error instanceof Prisma.PrismaClientKnownRequestError &&
+			error.code === 'P2025'
+		) {
 			res.status(404).json({ error: 'Ticket not found' });
 			return;
 		}

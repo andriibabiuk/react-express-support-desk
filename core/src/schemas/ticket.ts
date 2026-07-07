@@ -9,7 +9,13 @@ export const createTicketSchema = z.object({
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 
-export const sortableColumns = ['subject', 'senderName', 'status', 'category', 'createdAt'] as const;
+export const sortableColumns = [
+	'subject',
+	'senderName',
+	'status',
+	'category',
+	'createdAt',
+] as const;
 export type TicketSortField = (typeof sortableColumns)[number];
 
 // Plain string-literal unions (not the `TicketStatus`/`TicketCategory` enums
@@ -52,7 +58,12 @@ export const ticketListQuerySchema = z.object({
 	// 1-indexed, matching the page number shown to the user — `server/src/routes/tickets.ts`
 	// converts to Prisma's 0-indexed `skip`/`take`.
 	page: z.coerce.number().int().min(1).catch(1),
-	pageSize: z.coerce.number().int().min(1).max(maxPageSize).catch(defaultPageSize),
+	pageSize: z.coerce
+		.number()
+		.int()
+		.min(1)
+		.max(maxPageSize)
+		.catch(defaultPageSize),
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;
 
@@ -62,3 +73,15 @@ export const assignTicketSchema = z.object({
 	assignedToId: z.string().min(1, 'assignedToId is required').nullable(),
 });
 export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
+
+export const updateTicketSchema = z.object({
+	assignedToId: z.string().min(1).nullable().optional(),
+	status: z.enum(statusFilterValues).optional(),
+	// `null` is a valid value for category (uncategorized).
+	category: z
+		.enum(['generalQuestion', 'technicalQuestion', 'refundRequest'])
+		.nullable()
+		.optional(),
+});
+
+export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
