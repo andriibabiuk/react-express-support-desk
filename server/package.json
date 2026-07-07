@@ -12,7 +12,8 @@
     "seed": "bun run prisma/seed.ts",
     "seed:ai-agent": "bun run prisma/seed-ai-agent.ts",
     "seed:tickets": "bun run prisma/seed-tickets.ts",
-    "seed:remote": "DATABASE_URL=$DATABASE_PUBLIC_URL bun run prisma/seed.ts && DATABASE_URL=$DATABASE_PUBLIC_URL bun run prisma/seed-ai-agent.ts"
+    "seed:remote": "DATABASE_URL=$DATABASE_PUBLIC_URL bun run prisma/seed.ts && DATABASE_URL=$DATABASE_PUBLIC_URL bun run prisma/seed-ai-agent.ts",
+    "seed:tickets:remote": "DATABASE_URL=$DATABASE_PUBLIC_URL bun run prisma/seed-tickets.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

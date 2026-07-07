@@ -514,9 +514,11 @@ domain instead of two.
   Railway domain (same-origin, single service) — not the `localhost` dev
   values in `server/.env.example`.
 - `server/package.json`'s `seed:remote` script (`DATABASE_URL=
-  $DATABASE_PUBLIC_URL bun run prisma/seed.ts && ...`) exists for running
-  the seed scripts from a local machine — via `railway run -- bun run
-  --filter server seed:remote` — against production, since the app's own
+  $DATABASE_PUBLIC_URL bun run prisma/seed.ts && ...`) and its
+  `seed:tickets:remote` counterpart exist for running the seed scripts
+  from a local machine — via `railway run -- bun run --filter server
+  seed:remote` (or `seed:tickets:remote`) — against production, since the
+  app's own
   `DATABASE_URL` variable is normally set to Railway's private
   `*.railway.internal` hostname, which only resolves *inside* Railway's
   network (i.e. not from `railway run`, which executes locally); this
