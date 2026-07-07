@@ -115,7 +115,11 @@
       "Bash(echo \"started pid $!\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5183/)",
       "Bash(curl -s http://localhost:5183/)",
-      "Bash(curl -s http://localhost:5183/src/index.css)"
+      "Bash(curl -s http://localhost:5183/src/index.css)",
+      "WebSearch",
+      "WebFetch(domain:docs.railway.com)",
+      "WebFetch(domain:www.prisma.io)",
+      "Bash(docker build *)"
     ],
     "additionalDirectories": [
       "\\tmp"

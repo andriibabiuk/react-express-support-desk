@@ -157,15 +157,25 @@ to `TicketCategory` and `TicketStatus`.
   `client` dependency — its generated code isn't meant for a browser
   bundle), so `core/src/constants/role.ts`, `core/src/constants/
   ticket-category.ts`, and `core/src/constants/ticket-status.ts` each define
-  a small framework-agnostic mirror as a real TypeScript `enum` (`export enum
-  Role { admin = 'admin', agent = 'agent' }`, same shape for the other two),
-  re-exported from `core/src/index.ts`. A genuine `enum` works here even
-  though `client/tsconfig.app.json` sets `erasableSyntaxOnly: true` (which
-  normally forbids non-erasable syntax like enums) — that flag only applies
-  to files under the client's own `include` (`client/src`), not to an
-  imported workspace package's `.ts` source, so `core`'s enums typecheck fine
-  when imported. Import it the same way as the zod schemas — `import { Role
-  } from 'core'` — see `client/src/components/AdminRoute.tsx`,
+  a small framework-agnostic mirror as a `const` object plus a derived
+  literal-union type sharing its name (`export const Role = { admin:
+  'admin', agent: 'agent' } as const; export type Role = (typeof
+  Role)[keyof typeof Role]`, same shape for the other two — the same
+  pattern Prisma 7 itself generates, see the note on Prisma's own
+  `TicketStatus`/`TicketCategory` types under
+  [Ticket list](#ticket-list)), re-exported from `core/src/index.ts`. This
+  is **not** a real TS `enum` — a real enum was tried here initially, but
+  `client/tsconfig.app.json`'s `erasableSyntaxOnly: true` broke the client
+  build: without a formal TS project reference from `client` to `core`,
+  `tsc -b` folds `core`'s source files straight into `client`'s own
+  compilation and enforces `client`'s compiler options on them too (a
+  stale local `.tsbuildinfo` incremental-build cache had been masking this
+  — it only surfaces on a clean build, which is what a fresh CI/Docker
+  checkout always is). The `const`-object pattern is fully erasable syntax,
+  so it sidesteps the issue while keeping every call site (`Role.admin`,
+  `import { Role } from 'core'`) unchanged. Import it the same way as the
+  zod schemas — `import { Role } from 'core'` — see
+  `client/src/components/AdminRoute.tsx`,
   `client/src/components/NavBar.tsx`,
   `client/src/components/DeleteUserDialog.tsx`, and
   `client/src/components/UsersTable.tsx` (the `User['role']` type itself is
@@ -452,6 +462,57 @@ headless-browser-hang quirk), so don't duplicate that context here — see
 `.claude/agents/playwright-e2e-tester.md` for the details. Keep new E2E
 coverage scoped to the cases described above, rather than mirroring
 everything a component test already covers.
+
+## Deployment
+
+Deployed to Railway as a **single service** — Express serves both the API
+and the built client, rather than two separate services for client/server.
+This keeps better-auth's session cookie same-origin (no cross-site
+`SameSite=None` cookie handling needed) and means one Railway service/one
+domain instead of two.
+
+- Root `Dockerfile` is a two-stage build: `builder` runs `bun install`
+  (triggers `server`'s `postinstall: prisma generate` once the schema is
+  present) and `bun run build` (root script — only `client` defines a
+  `build` script, `tsc -b && vite build` into `client/dist`); `runtime`
+  copies the whole tree (including `node_modules`, since the CMD below
+  needs the `prisma` CLI, a devDependency — a pruned `--production` install
+  would drop it) and sets `NODE_ENV=production`.
+- `server/index.ts` only serves `client/dist` (via `express.static` plus a
+  `'/{*any}'` SPA-fallback route to `index.html`, matching the existing
+  Express 5 wildcard style used by `/api/auth/{*any}`) when
+  `NODE_ENV=production` — the same flag that already gates
+  `authLimiter`/`emailWebhookLimiter` in dev vs. prod. The fallback route
+  explicitly calls `next()` for any `req.path` starting with `/api/` rather
+  than serving `index.html`, so an unmatched API route still 404s instead
+  of returning the HTML shell with a `200`. Dev still relies on
+  the Vite dev server + proxy (`client/vite.config.ts`), not this path.
+- `VITE_SENTRY_DSN` is read via `import.meta.env` at `vite build` time
+  (`client/src/main.tsx`), so it must be set as a Railway **service
+  variable** before the first build — Railway only makes variables
+  available inside a Dockerfile build when declared with `ARG` (done in the
+  `builder` stage here), unlike Nixpacks builds.
+- Since `server/prisma/schema.prisma` uses the `@prisma/adapter-pg` driver
+  adapter (see [Authentication](#authentication)'s
+  `server/src/lib/prisma.ts`), the generated Prisma client has no native
+  query-engine binary — no `binaryTargets` needed for the Debian-based
+  `oven/bun` image.
+- The container's `CMD` chains `bun run migrate:deploy` (the
+  non-interactive counterpart to the dev-only `migrate` script — see
+  [Structure](#structure)) then the two seed scripts
+  (`bun run seed && bun run seed:ai-agent`, both idempotent — see
+  [Email ingestion](#email-ingestion)) before `bun run start`, so the app is
+  usable right after the first deploy with no manual step. Since both seed
+  scripts `process.exit(1)` on failure (e.g. a missing
+  `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` variable), a missing required
+  variable fails the whole deploy loudly instead of silently starting an
+  unseeded app.
+- `railway.json` pins the build to this Dockerfile (rather than letting
+  Railway's Nixpacks guess a build for a multi-workspace repo) and points
+  the health check at the existing `GET /api/health` route.
+- `CLIENT_URL`/`BETTER_AUTH_URL` must both be set to the service's public
+  Railway domain (same-origin, single service) — not the `localhost` dev
+  values in `server/.env.example`.
 
 ## Not yet implemented
 

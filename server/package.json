@@ -8,6 +8,7 @@
     "start": "bun index.ts",
     "postinstall": "prisma generate",
     "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
     "seed": "bun run prisma/seed.ts",
     "seed:ai-agent": "bun run prisma/seed-ai-agent.ts",
     "seed:tickets": "bun run prisma/seed-tickets.ts"

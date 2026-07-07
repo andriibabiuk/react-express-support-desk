@@ -1,5 +1,6 @@
 import './instrument.ts';
 
+import path from 'node:path';
 import * as Sentry from '@sentry/node';
 import { toNodeHandler } from 'better-auth/node';
 import cors from 'cors';
@@ -54,6 +55,15 @@ app.get('/api/me', requireAuth, (req, res) => {
 app.use('/api/users', usersRouter);
 app.use('/api/tickets', requireAuth, ticketsRouter);
 app.use('/api/emails', ...emailWebhookMiddleware, emailsRouter);
+
+if (process.env.NODE_ENV === 'production') {
+	const clientDistPath = path.join(import.meta.dir, '../client/dist');
+	app.use(express.static(clientDistPath));
+	app.get('/{*any}', (req, res, next) => {
+		if (req.path.startsWith('/api/')) return next();
+		res.sendFile(path.join(clientDistPath, 'index.html'));
+	});
+}
 
 Sentry.setupExpressErrorHandler(app);
 
