@@ -101,4 +101,100 @@ describe('TicketReplyForm', () => {
 
 		expect(await screen.findByText('Failed to send reply.')).toBeInTheDocument();
 	});
+
+	it('disables the Polish button until a non-blank body is entered', () => {
+		renderWithQuery(<TicketReplyForm ticketId={1} />);
+
+		expect(screen.getByRole('button', { name: /Polish/ })).toBeDisabled();
+
+		typeReply('   ');
+		expect(screen.getByRole('button', { name: /Polish/ })).toBeDisabled();
+
+		typeReply('thx for update');
+		expect(screen.getByRole('button', { name: /Polish/ })).toBeEnabled();
+	});
+
+	it('replaces the draft with the polished reply on success', async () => {
+		mockedPost.mockResolvedValue({ data: { body: 'Thank you for the update.' } });
+
+		renderWithQuery(<TicketReplyForm ticketId={1} />);
+
+		typeReply('thx for update');
+		fireEvent.click(screen.getByRole('button', { name: /Polish/ }));
+
+		await waitFor(() => {
+			expect(mockedPost).toHaveBeenCalledWith('/api/tickets/1/replies/polish', {
+				body: 'thx for update',
+			});
+		});
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText('Type your reply here...')).toHaveValue(
+				'Thank you for the update.',
+			);
+		});
+	});
+
+	it('shows "Polishing..." and disables the form while polishing', async () => {
+		mockedPost.mockReturnValue(new Promise(() => {})); // never resolves
+
+		renderWithQuery(<TicketReplyForm ticketId={1} />);
+
+		typeReply('thx for update');
+		fireEvent.click(screen.getByRole('button', { name: /Polish/ }));
+
+		expect(
+			await screen.findByRole('button', { name: /Polishing.../ }),
+		).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Reply' })).toBeDisabled();
+		expect(screen.getByPlaceholderText('Type your reply here...')).toBeDisabled();
+	});
+
+	it('shows the server error message and keeps the draft when polishing fails', async () => {
+		mockedIsAxiosError.mockReturnValue(true);
+		mockedPost.mockRejectedValue({
+			isAxiosError: true,
+			response: { data: { error: 'Failed to polish reply.' } },
+		});
+
+		renderWithQuery(<TicketReplyForm ticketId={1} />);
+
+		typeReply('thx for update');
+		fireEvent.click(screen.getByRole('button', { name: /Polish/ }));
+
+		expect(await screen.findByText('Failed to polish reply.')).toBeInTheDocument();
+		expect(screen.getByPlaceholderText('Type your reply here...')).toHaveValue(
+			'thx for update',
+		);
+	});
+
+	it('shows a generic error message when polishing fails for a non-axios reason', async () => {
+		mockedIsAxiosError.mockReturnValue(false);
+		mockedPost.mockRejectedValue(new Error('network error'));
+
+		renderWithQuery(<TicketReplyForm ticketId={1} />);
+
+		typeReply('thx for update');
+		fireEvent.click(screen.getByRole('button', { name: /Polish/ }));
+
+		expect(
+			await screen.findByText('Failed to polish reply.'),
+		).toBeInTheDocument();
+	});
+
+	it('clicking Polish only calls the polish endpoint, not the reply endpoint', async () => {
+		mockedPost.mockResolvedValue({ data: { body: 'Thank you for the update.' } });
+
+		renderWithQuery(<TicketReplyForm ticketId={1} />);
+
+		typeReply('thx for update');
+		fireEvent.click(screen.getByRole('button', { name: /Polish/ }));
+
+		await waitFor(() => {
+			expect(mockedPost).toHaveBeenCalledTimes(1);
+		});
+		expect(mockedPost).not.toHaveBeenCalledWith(
+			'/api/tickets/1/replies',
+			expect.anything(),
+		);
+	});
 });
