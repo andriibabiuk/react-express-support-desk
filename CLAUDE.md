@@ -19,11 +19,16 @@ Bun workspace monorepo:
   Dev server proxies `/api/*` to the server on port 4000 (see `vite.config.ts`).
 - `server/` — Express 5 + TypeScript, run directly by the Bun runtime (no
   build step). Entry point `server/index.ts`, with route modules under
-  `server/src/routes/` (e.g. `users.ts`, mounted in `index.ts` via
-  `app.use('/api/users', usersRouter)`).
+  `server/src/routes/` (e.g. `users.ts`, `emails.ts`, mounted in `index.ts`
+  via `app.use('/api/users', usersRouter)`-style calls).
 - `core/` — shared TypeScript package with no build step (consumed as raw
   `.ts` source, same as `server`); holds code that both `client` and `server`
-  need, currently zod schemas. See [Validation](#validation) below.
+  need, split into `core/src/schemas/` (zod schemas, see
+  [Validation](#validation) below) and `core/src/constants/` (enums, see
+  [Never compare roles, ticket categories, or ticket statuses against raw
+  strings](#never-compare-roles-ticket-categories-or-ticket-statuses-against-raw-strings)
+  below) — put a new shared file in whichever of the two it is, not loose at
+  `core/src/`.
 - `server/prisma/schema.prisma` — Prisma ORM against a local PostgreSQL
   database named `supportdesk`. Prisma 7 requires an explicit driver adapter
   (no default query engine); the app uses `@prisma/adapter-pg`, wired up in
@@ -71,15 +76,18 @@ client-side), define it once in the `core` workspace package, not
 independently on each side — the `client`/`server` copies will drift.
 
 - Add the schema (and its inferred type, `z.infer<typeof schema>`) to a file
-  under `core/src/` — one file per resource, e.g. `core/src/user.ts` holds
-  `createUserSchema` / `CreateUserInput` and `updateUserSchema` /
-  `UpdateUserInput` (the latter's `password` field is optional-by-blank —
-  empty string means "don't change the password", enforced by a `.refine`
-  rather than `.optional()` since the form always submits a string). Factor
-  out fields shared between sibling schemas (e.g. `name`/`email` between
-  create and update) into local consts reused via spread, rather than
-  duplicating the validation rules. Re-export everything from
-  `core/src/index.ts`.
+  under `core/src/schemas/` — one file per resource, e.g.
+  `core/src/schemas/user.ts` holds `createUserSchema` / `CreateUserInput` and
+  `updateUserSchema` / `UpdateUserInput` (the latter's `password` field is
+  optional-by-blank — empty string means "don't change the password",
+  enforced by a `.refine` rather than `.optional()` since the form always
+  submits a string), and `core/src/schemas/ticket.ts` holds
+  `createTicketSchema` / `CreateTicketInput` (shared with
+  `server/src/routes/emails.ts`'s inbound-email handler — see
+  [Email ingestion](#email-ingestion)). Factor out fields shared between
+  sibling schemas (e.g. `name`/`email` between create and update) into local
+  consts reused via spread, rather than duplicating the validation rules.
+  Re-export everything from `core/src/index.ts`.
 - `core/package.json` has no build step — `exports["."]` points straight at
   `./src/index.ts`, consumed as raw TypeScript by both Bun (`server`) and
   Vite (`client`), same as how `server` itself runs. Add any schema-only
@@ -90,8 +98,10 @@ independently on each side — the `client`/`server` copies will drift.
   consumer, run `bun install` from the repo root to link it into that
   workspace's `node_modules`.
 - A schema that's only ever used on one side (e.g. an env-var schema that's
-  server-only) stays local to that workspace — don't move it to `core`
-  pre-emptively.
+  server-only) normally stays local to that workspace — don't move it to
+  `core` pre-emptively. `createTicketSchema` is a deliberate exception: it
+  currently has only one consumer (`emails.ts`), but lives in `core` anyway
+  in anticipation of a client-side ticket form once Phase 4 ships.
 
 ## Authentication
 
@@ -126,11 +136,12 @@ users are provisioned only via the seed script.
 Required env vars (see `server/.env.example`): `BETTER_AUTH_SECRET`,
 `BETTER_AUTH_URL`, `CLIENT_URL`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`.
 
-### Never compare roles against raw strings
+### Never compare roles, ticket categories, or ticket statuses against raw strings
 
 `'admin'` / `'agent'` must never appear as string literals in application
 code — always go through a `Role` enum, so a typo or a future role rename is
-a compile error instead of a silent no-op comparison.
+a compile error instead of a silent no-op comparison. The same rule applies
+to `TicketCategory` and `TicketStatus`.
 
 - Server: `import { Role } from '@prisma/client'` — it's generated from the
   `enum Role { admin agent }` in `server/prisma/schema.prisma`, so it's
@@ -138,23 +149,33 @@ a compile error instead of a silent no-op comparison.
   `server/src/middleware/require-admin.ts` (`req.user.role !== Role.admin`),
   `server/src/lib/auth.ts` (`additionalFields.role`), and
   `server/src/routes/users.ts` (`Role.agent` on create, `Role.admin` checks
-  on delete).
+  on delete). Likewise `import { TicketCategory, TicketStatus } from
+  '@prisma/client'` mirrors `enum TicketCategory { generalQuestion
+  technicalQuestion refundRequest }` and `enum TicketStatus { open resolved
+  closed }` from the same schema.
 - Client: `@prisma/client` is server-only (it isn't, and shouldn't be, a
   `client` dependency — its generated code isn't meant for a browser
-  bundle), so `core/src/role.ts` defines a small framework-agnostic mirror
-  with the exact same shape Prisma generates (`export const Role = {admin:
-  'admin', agent: 'agent'} as const` + `export type Role =
-  (typeof Role)[keyof typeof Role]`), re-exported from `core/src/index.ts`.
-  Import it the same way as the zod schemas — `import { Role } from
-  'core'` — see `client/src/components/AdminRoute.tsx`,
+  bundle), so `core/src/constants/role.ts`, `core/src/constants/
+  ticket-category.ts`, and `core/src/constants/ticket-status.ts` each define
+  a small framework-agnostic mirror as a real TypeScript `enum` (`export enum
+  Role { admin = 'admin', agent = 'agent' }`, same shape for the other two),
+  re-exported from `core/src/index.ts`. A genuine `enum` works here even
+  though `client/tsconfig.app.json` sets `erasableSyntaxOnly: true` (which
+  normally forbids non-erasable syntax like enums) — that flag only applies
+  to files under the client's own `include` (`client/src`), not to an
+  imported workspace package's `.ts` source, so `core`'s enums typecheck fine
+  when imported. Import it the same way as the zod schemas — `import { Role
+  } from 'core'` — see `client/src/components/AdminRoute.tsx`,
   `client/src/components/NavBar.tsx`,
   `client/src/components/DeleteUserDialog.tsx`, and
   `client/src/components/UsersTable.tsx` (the `User['role']` type itself is
-  `Role`, not `'admin' | 'agent'`).
-- These are two separate declarations (Prisma can't be avoided server-side;
-  `core` can't depend on Prisma), so if a role is ever added or renamed in
-  `schema.prisma`, update `core/src/role.ts` to match by hand — nothing
-  enforces they stay in sync automatically.
+  `Role`, not `'admin' | 'agent'`). `TicketCategory`/`TicketStatus` have no
+  consumers yet — they're there for the future Ticket UI/API (Phase 4).
+- These are two separate declarations per enum (Prisma can't be avoided
+  server-side; `core` can't depend on Prisma), so if a role, ticket category,
+  or ticket status is ever added or renamed in `schema.prisma`, update the
+  matching `core/src/constants/*.ts` file by hand — nothing enforces they
+  stay in sync automatically.
 
 ### User deletion is a soft delete
 
@@ -176,6 +197,48 @@ own sign-in flow doesn't know about `deletedAt` — and `User.email`'s
 can register a new account with it. Fixing either would mean adopting
 better-auth's `admin` plugin (built-in ban/session-revocation, but a bigger
 integration change) or a partial unique index, respectively.
+
+### Email ingestion
+
+`POST /api/emails/inbound` (`server/src/routes/emails.ts`) turns an inbound
+support email into a `Ticket` row (`server/prisma/schema.prisma`). This is
+deliberately ahead of `implementation-plan.md`'s own sequencing — Phase 4
+(Ticket CRUD) and Phase 5 (AI Features) haven't been built, so this is just
+enough to persist a ticket, not the full CRUD/UI:
+
+- No real email provider (SendGrid/Mailgun — `tech-stack.md` leaves this
+  undecided) is wired up. The endpoint accepts a plain, provider-agnostic
+  JSON body validated by `createTicketSchema` (`core/src/schemas/ticket.ts`
+  — `senderEmail`, `senderName`, `subject`, `body`) instead of any one
+  vendor's webhook payload shape. When a provider is chosen, translate its
+  payload into this same shape rather than changing the ticket-creation
+  logic itself.
+- Auth is `requireWebhookSecret` (`server/src/middleware/
+  require-webhook-secret.ts`), comparing an `x-webhook-secret` header
+  against `process.env.EMAIL_WEBHOOK_SECRET` — a placeholder for real
+  provider signature verification (SendGrid/Mailgun each sign their webhooks
+  differently), since there's no specific provider to verify against yet.
+  Rate-limited the same way `/api/auth` is (`server/src/middleware/
+  email-limiter.ts`'s `emailWebhookLimiter`, applied only in production —
+  see the `authLimiter` precedent in `server/index.ts`).
+- `Ticket.category` is nullable with **no default** — there's no AI
+  classification yet (Phase 5) to assign one, so it stays `null` until that
+  exists. `Ticket.status` defaults to `open`. Unlike `User` (whose `id` is a
+  string assigned by better-auth), `Ticket` has no external ID owner, so it
+  uses Prisma's own auto-incrementing integer `id`.
+- `Ticket.assignedToId`/`assignedTo` is a nullable `@relation` to `User`
+  (mirrored by `User.assignedTickets`), added ahead of the assignment
+  feature itself (Phase 4) — every email-ingested ticket has it `null` at
+  creation; nothing sets it yet.
+- Partial idempotency: before creating a ticket, `emails.ts` checks for an
+  existing one with the same `senderEmail` + `subject` + `body`
+  (`prisma.ticket.findFirst`) and returns that instead (`200`, not `201`) if
+  found — this catches a retried webhook delivery resending the identical
+  email. It does **not** catch near-duplicates (e.g. a provider that
+  slightly mutates the body on retry) since there's no provider message-id
+  in this provider-agnostic payload to dedupe on instead, and the
+  check-then-create isn't atomic (a narrow race window exists under truly
+  concurrent duplicate requests).
 
 ## Versions in use
 
@@ -224,6 +287,7 @@ environment).
 
 ## Not yet implemented
 
-Ticket CRUD, data models beyond the auth User (Ticket, etc.), AI features
-(Claude API), email integration, dashboard, Docker — see
-`implementation-plan.md` for the phase breakdown.
+Ticket CRUD (list/detail/update/assign — see [Email ingestion](#email-ingestion)
+for the one thing that does exist: creating a bare `Ticket` row from an
+inbound email), AI features (Claude API), a real email provider, dashboard,
+Docker — see `implementation-plan.md` for the phase breakdown.

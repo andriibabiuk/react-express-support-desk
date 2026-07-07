@@ -4,7 +4,9 @@ import helmet from 'helmet';
 import { auth } from './src/lib/auth.ts';
 import { prisma } from './src/lib/prisma.ts';
 import { authLimiter } from './src/middleware/auth-limiter.ts';
+import { emailWebhookLimiter } from './src/middleware/email-limiter.ts';
 import { requireAuth } from './src/middleware/require-auth.ts';
+import { emailsRouter } from './src/routes/emails.ts';
 import { usersRouter } from './src/routes/users.ts';
 
 const app = express();
@@ -14,6 +16,8 @@ app.use(helmet());
 
 const authMiddleware =
 	process.env.NODE_ENV === 'production' ? [authLimiter] : [];
+const emailWebhookMiddleware =
+	process.env.NODE_ENV === 'production' ? [emailWebhookLimiter] : [];
 
 app.all('/api/auth/{*any}', ...authMiddleware, (req, res, next) =>
 	toNodeHandler(auth)(req, res).catch(next),
@@ -30,6 +34,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 	res.json({ user: { id, name, email, role } });
 });
 app.use('/api/users', usersRouter);
+app.use('/api/emails', ...emailWebhookMiddleware, emailsRouter);
 
 app.listen(port, () => {
 	console.log(`Server listening on http://localhost:${port}`);
