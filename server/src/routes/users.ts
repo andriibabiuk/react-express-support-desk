@@ -3,6 +3,7 @@ import { createUserSchema, updateUserSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
 import { auth } from '../lib/auth.ts';
+import { AI_AGENT_EMAIL } from '../lib/ai-agent.ts';
 import { prisma } from '../lib/prisma.ts';
 import { requireAdmin } from '../middleware/require-admin.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
@@ -11,7 +12,7 @@ export const usersRouter = Router();
 
 usersRouter.get('/', requireAuth, requireAdmin, async (_req, res) => {
 	const users = await prisma.user.findMany({
-		where: { deletedAt: null },
+		where: { deletedAt: null, email: { not: AI_AGENT_EMAIL } },
 		select: { id: true, name: true, email: true, role: true, createdAt: true },
 		orderBy: { createdAt: 'asc' },
 	});
@@ -106,7 +107,7 @@ usersRouter.delete<{ id: string }>('/:id', requireAuth, requireAdmin, async (req
 
 	const existingUser = await prisma.user.findUnique({
 		where: { id },
-		select: { role: true, deletedAt: true },
+		select: { role: true, email: true, deletedAt: true },
 	});
 	if (!existingUser || existingUser.deletedAt) {
 		res.status(404).json({ error: 'User not found.' });
@@ -115,6 +116,11 @@ usersRouter.delete<{ id: string }>('/:id', requireAuth, requireAdmin, async (req
 
 	if (existingUser.role === Role.admin) {
 		res.status(403).json({ error: 'Admin users cannot be deleted.' });
+		return;
+	}
+
+	if (existingUser.email === AI_AGENT_EMAIL) {
+		res.status(403).json({ error: 'The AI agent user cannot be deleted.' });
 		return;
 	}
 
