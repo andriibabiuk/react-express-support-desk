@@ -1,6 +1,7 @@
 import { createTicketSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
+import { getAiAgentId } from '../lib/ai-agent.ts';
 import { autoResolveTicket } from '../lib/auto-resolve-ticket.ts';
 import { classifyTicket } from '../lib/classify-ticket.ts';
 import { prisma } from '../lib/prisma.ts';
@@ -28,7 +29,16 @@ emailsRouter.post('/inbound', requireWebhookSecret, async (req, res) => {
 	}
 
 	const ticket = await prisma.ticket.create({
-		data: { subject, body, senderEmail, senderName },
+		data: {
+			subject,
+			body,
+			senderEmail,
+			senderName,
+			// Every new ticket starts out assigned to the AI agent while the
+			// auto-resolve job (`autoResolveTicket` below) works it — see
+			// `server/src/lib/ai-agent.ts`.
+			assignedToId: await getAiAgentId(),
+		},
 	});
 
 	classifyTicket(ticket);

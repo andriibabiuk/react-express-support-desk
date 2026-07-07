@@ -99,9 +99,12 @@ async function autoResolveTicketJob(
 			}),
 		]);
 	} else {
+		// Not resolvable — escalate to a human agent, so it shouldn't stay
+		// assigned to the AI agent it was auto-assigned to on creation (see
+		// `server/src/routes/emails.ts`).
 		await prisma.ticket.update({
 			where: { id },
-			data: { status: TicketStatus.open },
+			data: { status: TicketStatus.open, assignedToId: null },
 		});
 	}
 }

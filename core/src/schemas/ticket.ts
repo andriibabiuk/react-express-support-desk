@@ -113,3 +113,17 @@ export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
 export interface TicketSummaryResponse {
 	summary: string;
 }
+
+// Response shape for `GET /api/tickets/stats` — see
+// `server/src/routes/tickets.ts` for how each figure is derived.
+export interface TicketStats {
+	totalTickets: number;
+	openTickets: number;
+	resolvedByAiCount: number;
+	resolvedByAiPercent: number;
+	avgResolutionMs: number | null;
+	// One entry per day for the last 30 days (oldest first), zero-filled for
+	// days with no tickets. `date` is a `YYYY-MM-DD` UTC calendar day, not an
+	// ISO timestamp.
+	dailyTicketCounts: { date: string; count: number }[];
+}

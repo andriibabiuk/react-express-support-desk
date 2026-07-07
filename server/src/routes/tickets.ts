@@ -1,6 +1,10 @@
 import { Prisma, Role, SenderType, TicketStatus } from '@prisma/client';
 import { generateText } from 'ai';
-import { ticketListQuerySchema, updateTicketSchema } from 'core';
+import {
+	ticketListQuerySchema,
+	updateTicketSchema,
+	type TicketStats,
+} from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
 import { ticketSummaryModel } from '../lib/ai.ts';
@@ -18,6 +22,21 @@ ticketsRouter.get('/assignees', async (_req, res) => {
 		orderBy: { name: 'asc' },
 	});
 	res.json({ assignees });
+});
+
+// Must come before `/:id` for the same reason as `/assignees` above.
+ticketsRouter.get('/stats', async (_req, res) => {
+	// All the aggregation (counts, the AI-resolution rate, the resolution-time
+	// average, and the 30-day daily breakdown) lives in the `get_ticket_stats`
+	// Postgres function — see `prisma/migrations/20260707182148_add_ticket_stats_function/migration.sql`
+	// — so this just unwraps its single-row, single-column JSON result and
+	// returns it as-is; it's already shaped like `TicketStats`
+	// (`core/src/schemas/ticket.ts`).
+	const [{ get_ticket_stats: stats }] = await prisma.$queryRaw<
+		[{ get_ticket_stats: TicketStats }]
+	>`SELECT get_ticket_stats()`;
+
+	res.json(stats);
 });
 
 ticketsRouter.get('/', async (req, res) => {

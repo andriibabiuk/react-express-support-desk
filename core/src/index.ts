@@ -24,6 +24,7 @@ export {
 	type TicketCategoryFilter,
 	type TicketListQuery,
 	type TicketSortField,
+	type TicketStats,
 	type TicketStatusFilter,
 	type TicketSummaryResponse,
 	type UpdateTicketInput,

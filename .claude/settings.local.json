@@ -102,7 +102,11 @@
       "Bash(git -C d:/workdir/react-express-support-desk diff core/src/schemas/ticket.ts)",
       "Bash(git stash *)",
       "Bash(bun remove *)",
-      "Bash(bunx playwright *)"
+      "Bash(bunx playwright *)",
+      "Bash(curl -s -c cookies.txt -X POST http://localhost:4000/api/auth/sign-in/email -H 'Content-Type: application/json' -d '{\"email\":\"agent@example.com\",\"password\":\"password123\"}' -o /dev/null -w 'login status: %{http_code}\\\\n')",
+      "Bash(curl -s -b cookies.txt http://localhost:4000/api/tickets/stats)",
+      "Skill(dataviz)",
+      "Skill(dataviz:*)"
     ],
     "additionalDirectories": [
       "\\tmp"

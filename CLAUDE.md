@@ -227,9 +227,23 @@ enough to persist a ticket, not the full CRUD/UI:
   string assigned by better-auth), `Ticket` has no external ID owner, so it
   uses Prisma's own auto-incrementing integer `id`.
 - `Ticket.assignedToId`/`assignedTo` is a nullable `@relation` to `User`
-  (mirrored by `User.assignedTickets`), added ahead of the assignment
-  feature itself (Phase 4) — every email-ingested ticket has it `null` at
-  creation; nothing sets it yet.
+  (mirrored by `User.assignedTickets`), added ahead of the full assignment
+  feature itself (Phase 4). It's not fully unused, though: every
+  email-ingested ticket is auto-assigned at creation to a system "AI" user
+  (`server/src/lib/ai-agent.ts`'s `getAiAgentId()`, seeded by
+  `bun run seed:ai-agent` → `server/prisma/seed-ai-agent.ts` — a real
+  `agent`-role `User` with no linked credential account, so it never signs
+  in) while the auto-resolve pg-boss job
+  (`server/src/lib/auto-resolve-ticket.ts`) works it. If the job resolves
+  the ticket, the assignment is left as-is (a resolved ticket assigned to
+  "AI" is the record of who resolved it); if it escalates instead, the
+  ticket is unassigned (`assignedToId: null`) in the same update that flips
+  it to `open`, so it reads as unclaimed until a human agent picks it up.
+  `getAiAgentId()` caches the id after the first lookup and degrades to
+  `null` (logging an error) rather than throwing if the seed script hasn't
+  been run yet, so a missing AI user doesn't take down inbound email
+  ingestion. `e2e/reset-test-db.ts` also runs this seed script, since
+  `e2e/emails.spec.ts`'s auto-resolve coverage depends on it.
 - Partial idempotency: before creating a ticket, `emails.ts` checks for an
   existing one with the same `senderEmail` + `subject` + `body`
   (`prisma.ticket.findFirst`) and returns that instead (`200`, not `201`) if
@@ -337,6 +351,40 @@ yet.
     to `0` (via a `useEffect` watching all four), since e.g. page 5 of the
     unfiltered list may not exist once a filter narrows the result set down
     to one page.
+
+### Dashboard stats
+
+`GET /api/tickets/stats` (`server/src/routes/tickets.ts`, mounted before
+`/:id` for the same routing reason as `/assignees`) backs the stat tiles and
+the "tickets per day" bar chart on `HomePage.tsx` (total tickets, open
+tickets, tickets resolved by AI, % resolved by AI, average resolution time,
+and a 30-day daily ticket count — see `TicketStats` in
+`core/src/schemas/ticket.ts`).
+
+Unlike every other aggregation in this codebase (e.g. [ticket list](#ticket-list)'s
+sorting/filtering/pagination, all plain Prisma calls), this one is computed
+by a **stored Postgres function**, `get_ticket_stats()` — added by hand in
+`prisma/migrations/20260707182148_add_ticket_stats_function/migration.sql`
+(Prisma has no schema-level concept of a SQL function, so this migration was
+scaffolded with `prisma migrate dev --create-only` and hand-written, not
+generated from `schema.prisma`). It returns a single `json` value shaped
+exactly like `TicketStats`, so the route just runs
+`prisma.$queryRaw` on `SELECT get_ticket_stats()`, unwraps the single-row
+result, and passes it straight to `res.json()` — no per-field mapping. If
+`TicketStats`'s shape ever
+changes, update the `json_build_object(...)` call in the migration to match;
+nothing enforces the two stay in sync automatically (same caveat as the
+`Role`/`TicketStatus`/`TicketCategory` enum mirrors in
+[Never compare roles, ticket categories, or ticket statuses against raw
+strings](#never-compare-roles-ticket-categories-or-ticket-statuses-against-raw-strings)).
+Inside the function: `"createdAt"`/`"updatedAt"` are bucketed by UTC calendar
+day using `NOW() AT TIME ZONE 'UTC'` rather than `CURRENT_DATE`, so day
+boundaries don't depend on the Postgres session's own timezone setting; the
+30-day series is zero-filled via `generate_series` left-joined against the
+actual per-day counts, the same "resolved by AI" definition as before (a
+`resolved` ticket with an AI-authored `TicketReply`), and the same
+`updatedAt - createdAt` approximation for resolution time (no dedicated
+`resolvedAt` column — see [Email ingestion](#email-ingestion)).
 
 ## Versions in use
 

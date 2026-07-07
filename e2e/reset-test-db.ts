@@ -28,3 +28,11 @@ execSync('bun run prisma/seed-e2e-agent.ts', {
 	env: process.env,
 	stdio: 'inherit',
 });
+
+// Required for `emails.spec.ts`'s auto-resolve coverage — inbound tickets
+// are auto-assigned to this user on creation (see `server/src/lib/ai-agent.ts`).
+execSync('bun run prisma/seed-ai-agent.ts', {
+	cwd: serverDir,
+	env: process.env,
+	stdio: 'inherit',
+});
