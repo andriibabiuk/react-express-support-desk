@@ -513,6 +513,21 @@ domain instead of two.
 - `CLIENT_URL`/`BETTER_AUTH_URL` must both be set to the service's public
   Railway domain (same-origin, single service) — not the `localhost` dev
   values in `server/.env.example`.
+- `server/package.json`'s `seed:remote` script (`DATABASE_URL=
+  $DATABASE_PUBLIC_URL bun run prisma/seed.ts && ...`) exists for running
+  the seed scripts from a local machine — via `railway run -- bun run
+  --filter server seed:remote` — against production, since the app's own
+  `DATABASE_URL` variable is normally set to Railway's private
+  `*.railway.internal` hostname, which only resolves *inside* Railway's
+  network (i.e. not from `railway run`, which executes locally); this
+  swaps in `DATABASE_PUBLIC_URL` instead (requires the Postgres plugin's
+  public networking/TCP proxy to be enabled, and that variable referenced
+  on this service). The inline `VAR=value` syntax works cross-platform
+  because `bun run` executes `package.json` scripts through Bun's own
+  cross-platform shell, not the OS shell (Windows included). For one-off
+  production commands that don't need this indirection, `railway ssh`
+  (dropping into the actual deployed container, already on the private
+  network) is simpler.
 
 ## Not yet implemented
 
