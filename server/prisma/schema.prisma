@@ -29,7 +29,8 @@ model User {
   accounts        Account[]
   assignedTickets Ticket[]
 
-  role Role @default(agent)
+  role          Role          @default(agent)
+  ticketReplies TicketReply[]
 
   @@unique([email])
   @@map("user")
@@ -96,18 +97,36 @@ enum TicketCategory {
 }
 
 model Ticket {
-  id           Int             @id @default(autoincrement())
-  subject      String
-  body         String
-  senderEmail  String
-  senderName   String
-  status       TicketStatus    @default(open)
-  category     TicketCategory?
-  assignedToId String?
-  assignedTo   User?           @relation(fields: [assignedToId], references: [id])
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id            Int             @id @default(autoincrement())
+  subject       String
+  body          String
+  senderEmail   String
+  senderName    String
+  status        TicketStatus    @default(open)
+  category      TicketCategory?
+  assignedToId  String?
+  assignedTo    User?           @relation(fields: [assignedToId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  ticketReplies TicketReply[]
 
   @@index([assignedToId])
   @@map("ticket")
+}
+
+enum SenderType {
+  customer
+  agent
+}
+
+model TicketReply {
+  id         Int        @id @default(autoincrement())
+  body       String
+  senderType SenderType
+  ticketId   Int
+  ticket     Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?      @relation(fields: [authorId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }

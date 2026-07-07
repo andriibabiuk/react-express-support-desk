@@ -35,6 +35,7 @@ import {
 	STATUS_LABEL,
 	TicketCategory,
 	TicketStatus,
+	type Ticket,
 	type TicketCategoryFilter,
 	type TicketSortField,
 	type TicketStatusFilter,
@@ -43,15 +44,19 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export interface Ticket {
-	id: number;
-	subject: string;
-	senderEmail: string;
-	senderName: string;
-	status: TicketStatus;
-	category: TicketCategory | null;
-	createdAt: string;
-}
+// The ticket list view only needs a subset of the full `Ticket` shape (e.g.
+// no `body` — see `core/src/schemas/ticket.ts` — and no `assignedTo` join,
+// since there's no assignment column on this table).
+export type TicketListItem = Pick<
+	Ticket,
+	| 'id'
+	| 'subject'
+	| 'senderEmail'
+	| 'senderName'
+	| 'status'
+	| 'category'
+	| 'createdAt'
+>;
 
 const SKELETON_ROWS = 5;
 
@@ -78,7 +83,7 @@ export function formatDate(value: string) {
 	});
 }
 
-const columnHelper = createColumnHelper<Ticket>();
+const columnHelper = createColumnHelper<TicketListItem>();
 
 const columns = [
 	columnHelper.accessor('subject', {
@@ -128,7 +133,7 @@ function SortIcon({ direction }: { direction: false | 'asc' | 'desc' }) {
 	return <ChevronsUpDown className='size-3.5 text-muted-foreground' />;
 }
 
-function TicketsTableHeader({ table }: { table: ReactTable<Ticket> }) {
+function TicketsTableHeader({ table }: { table: ReactTable<TicketListItem> }) {
 	return (
 		<TableHeader>
 			{table.getHeaderGroups().map(headerGroup => (
@@ -232,7 +237,7 @@ export function TicketsTable() {
 				.then(
 					res =>
 						res.data as {
-							tickets: Ticket[];
+							tickets: TicketListItem[];
 							pagination: {
 								page: number;
 								pageSize: number;

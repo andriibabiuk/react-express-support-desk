@@ -42,7 +42,7 @@ export function TicketAssigneeSelect({
 				assignedToId: nextAssignedToId,
 			}),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['ticket', String(ticketId)] });
+			queryClient.invalidateQueries({ queryKey: ['tickets', ticketId], exact: true });
 		},
 	});
 

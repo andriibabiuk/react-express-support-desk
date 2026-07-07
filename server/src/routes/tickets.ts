@@ -3,13 +3,13 @@ import { ticketListQuerySchema, updateTicketSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.ts';
-import { requireAuth } from '../middleware/require-auth.ts';
+import { repliesRouter } from './replies.ts';
 
 export const ticketsRouter = Router();
 
 // Must come before `/:id` — otherwise Express would match `assignees` as an
 // `:id` value and route it to that handler instead.
-ticketsRouter.get('/assignees', requireAuth, async (_req, res) => {
+ticketsRouter.get('/assignees', async (_req, res) => {
 	const assignees = await prisma.user.findMany({
 		where: { role: Role.agent, deletedAt: null },
 		select: { id: true, name: true, email: true },
@@ -18,7 +18,7 @@ ticketsRouter.get('/assignees', requireAuth, async (_req, res) => {
 	res.json({ assignees });
 });
 
-ticketsRouter.get('/', requireAuth, async (req, res) => {
+ticketsRouter.get('/', async (req, res) => {
 	const { sortBy, sortOrder, status, category, search, page, pageSize } =
 		ticketListQuerySchema.parse(req.query);
 
@@ -66,7 +66,7 @@ ticketsRouter.get('/', requireAuth, async (req, res) => {
 	});
 });
 
-ticketsRouter.get('/:id', requireAuth, async (req, res) => {
+ticketsRouter.get('/:id', async (req, res) => {
 	const id = Number(req.params.id);
 	if (!Number.isInteger(id)) {
 		res.status(400).json({ error: 'Invalid ticket id' });
@@ -86,7 +86,9 @@ ticketsRouter.get('/:id', requireAuth, async (req, res) => {
 	res.json(ticket);
 });
 
-ticketsRouter.patch('/:id', requireAuth, async (req, res) => {
+ticketsRouter.use('/:id/replies', repliesRouter);
+
+ticketsRouter.patch('/:id', async (req, res) => {
 	const id = Number(req.params.id);
 	if (!Number.isInteger(id)) {
 		res.status(400).json({ error: 'Invalid ticket id' });

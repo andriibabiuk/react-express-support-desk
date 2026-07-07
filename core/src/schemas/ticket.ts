@@ -1,4 +1,22 @@
 import { z } from 'zod';
+import { TicketCategory } from '../constants/ticket-category.ts';
+import { TicketStatus } from '../constants/ticket-status.ts';
+
+// The full shape returned by `GET /api/tickets/:id`. List endpoints
+// (`GET /api/tickets`) return a `Pick` of this — see `TicketListItem` in
+// `client/src/components/TicketsTable.tsx`.
+export interface Ticket {
+	id: number;
+	subject: string;
+	body: string;
+	senderEmail: string;
+	senderName: string;
+	status: TicketStatus;
+	category: TicketCategory | null;
+	createdAt: string;
+	updatedAt: string;
+	assignedTo: { id: string; name: string; email: string } | null;
+}
 
 export const createTicketSchema = z.object({
 	senderEmail: z.email('Enter a valid email address'),
@@ -67,21 +85,13 @@ export const ticketListQuerySchema = z.object({
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;
 
-// `null` unassigns the ticket; a non-null value must be an existing, active
-// user's id — `server/src/routes/tickets.ts`'s PATCH handler checks that.
-export const assignTicketSchema = z.object({
-	assignedToId: z.string().min(1, 'assignedToId is required').nullable(),
-});
-export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
-
 export const updateTicketSchema = z.object({
+	// `null` unassigns the ticket; a non-null value must be an existing,
+	// active agent's id — `server/src/routes/tickets.ts`'s PATCH handler checks that.
 	assignedToId: z.string().min(1).nullable().optional(),
 	status: z.enum(statusFilterValues).optional(),
 	// `null` is a valid value for category (uncategorized).
-	category: z
-		.enum(['generalQuestion', 'technicalQuestion', 'refundRequest'])
-		.nullable()
-		.optional(),
+	category: z.enum(TicketCategory).nullable().optional(),
 });
 
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;

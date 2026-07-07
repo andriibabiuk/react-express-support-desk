@@ -1,12 +1,17 @@
 export { Role } from './constants/role.ts';
+export {
+	SENDER_TYPE_LABEL,
+	senderTypes,
+	type SenderType,
+} from './constants/sender-type.ts';
 export { CATEGORY_LABEL, TicketCategory } from './constants/ticket-category.ts';
 export {
 	STATUS_BADGE_VARIANT,
 	STATUS_LABEL,
 	TicketStatus,
 } from './constants/ticket-status.ts';
+export * from './schemas/reply.ts';
 export {
-	assignTicketSchema,
 	categoryFilterValues,
 	createTicketSchema,
 	defaultPageSize,
@@ -14,8 +19,8 @@ export {
 	statusFilterValues,
 	ticketListQuerySchema,
 	updateTicketSchema,
-	type AssignTicketInput,
 	type CreateTicketInput,
+	type Ticket,
 	type TicketCategoryFilter,
 	type TicketListQuery,
 	type TicketSortField,
