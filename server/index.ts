@@ -3,6 +3,8 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { auth } from './src/lib/auth.ts';
+import { boss } from './src/lib/boss.ts';
+import { registerClassifyTicketWorker } from './src/lib/classify-ticket.ts';
 import { prisma } from './src/lib/prisma.ts';
 import { authLimiter } from './src/middleware/auth-limiter.ts';
 import { emailWebhookLimiter } from './src/middleware/email-limiter.ts';
@@ -48,6 +50,9 @@ app.get('/api/me', requireAuth, (req, res) => {
 app.use('/api/users', usersRouter);
 app.use('/api/tickets', requireAuth, ticketsRouter);
 app.use('/api/emails', ...emailWebhookMiddleware, emailsRouter);
+
+await boss.start();
+await registerClassifyTicketWorker();
 
 app.listen(port, () => {
 	console.log(`Server listening on http://localhost:${port}`);

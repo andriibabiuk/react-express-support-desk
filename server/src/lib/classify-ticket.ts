@@ -1,17 +1,47 @@
 import type { Ticket } from '@prisma/client';
 import { generateObject } from 'ai';
 import { TicketCategory } from 'core';
+import type { Job } from 'pg-boss';
 import { z } from 'zod';
 import { ticketClassificationModel } from './ai.ts';
+import { boss } from './boss.ts';
 import { prisma } from './prisma.ts';
 
-// Fire-and-forget: callers don't await this, so a new ticket is created (and
-// the request responded to) without waiting on the Gemini round-trip. Errors
-// are swallowed here rather than propagated, since there's no request left to
-// fail by the time this settles — an unclassified ticket just stays `null`,
-// same as before this feature existed.
+export const CLASSIFY_TICKET_QUEUE = 'classify-ticket';
+
+interface ClassifyTicketJobData {
+	id: number;
+	subject: string;
+	body: string;
+}
+
+// Enqueues classification as a pg-boss job rather than running it inline, so
+// a new ticket is created (and the request responded to) without waiting on
+// the Gemini round-trip — and, unlike a bare fire-and-forget promise, a
+// transient failure gets retried by pg-boss instead of leaving the ticket
+// unclassified for good.
 export function classifyTicket(ticket: Ticket): void {
-	generateObject({
+	const data: ClassifyTicketJobData = {
+		id: ticket.id,
+		subject: ticket.subject,
+		body: ticket.body,
+	};
+	boss.send(CLASSIFY_TICKET_QUEUE, data).catch(error => {
+		console.error(
+			`Failed to enqueue classification for ticket ${ticket.id}:`,
+			error,
+		);
+	});
+}
+
+async function classifyTicketJob(
+	jobs: Job<ClassifyTicketJobData>[],
+): Promise<void> {
+	const [job] = jobs;
+	if (!job) return;
+	const { id, subject, body } = job.data;
+
+	const { object } = await generateObject({
 		model: ticketClassificationModel,
 		schema: z.object({ category: z.enum(TicketCategory) }),
 		system:
@@ -19,15 +49,21 @@ export function classifyTicket(ticket: Ticket): void {
 			'category based on their subject and body: `generalQuestion` for ' +
 			'general questions, `technicalQuestion` for technical issues or ' +
 			'bugs, and `refundRequest` for refund or billing disputes.',
-		prompt: `Ticket subject: ${ticket.subject}\n\nTicket body: ${ticket.body}`,
-	})
-		.then(({ object }) =>
-			prisma.ticket.update({
-				where: { id: ticket.id },
-				data: { category: object.category },
-			}),
-		)
-		.catch(error => {
-			console.error(`Failed to classify ticket ${ticket.id}:`, error);
-		});
+		prompt: `Ticket subject: ${subject}\n\nTicket body: ${body}`,
+	});
+
+	await prisma.ticket.update({
+		where: { id },
+		data: { category: object.category },
+	});
+}
+
+// Called once at server startup (see `index.ts`) to create the queue and
+// start polling it — must run after `boss.start()`.
+export async function registerClassifyTicketWorker(): Promise<void> {
+	await boss.createQueue(CLASSIFY_TICKET_QUEUE);
+	await boss.work<ClassifyTicketJobData>(
+		CLASSIFY_TICKET_QUEUE,
+		classifyTicketJob,
+	);
 }
