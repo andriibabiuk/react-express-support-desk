@@ -1,6 +1,7 @@
 import { createTicketSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
+import { classifyTicket } from '../lib/classify-ticket.ts';
 import { prisma } from '../lib/prisma.ts';
 import { requireWebhookSecret } from '../middleware/require-webhook-secret.ts';
 
@@ -28,6 +29,8 @@ emailsRouter.post('/inbound', requireWebhookSecret, async (req, res) => {
 	const ticket = await prisma.ticket.create({
 		data: { subject, body, senderEmail, senderName },
 	});
+
+	classifyTicket(ticket);
 
 	res.status(201).json({ ticket });
 });
