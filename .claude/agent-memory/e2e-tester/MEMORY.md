@@ -1,0 +1,2 @@
+- [request fixture for no-UI endpoints](request_fixture_no_ui_endpoints.md) — POST /api/emails/inbound tested via `request` fixture only, no Page Object; zod required-field message gotcha
+- [migrate deploy vs reset](prisma_migrate_deploy_vs_reset.md) — use non-destructive `migrate deploy` when test DB just needs pending migrations applied, not a full reset
