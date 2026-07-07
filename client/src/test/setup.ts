@@ -9,3 +9,13 @@ import '@testing-library/jest-dom/vitest';
 afterEach(() => {
 	cleanup();
 });
+
+// jsdom doesn't implement the Pointer Events / scroll APIs Radix's Select
+// (and other popover-based primitives) rely on to open and position its
+// content — without these no-op stubs, opening a `Select` in a test throws
+// (`hasPointerCapture is not a function`) instead of just skipping the visual
+// positioning logic that jsdom can't do anyway.
+window.HTMLElement.prototype.scrollIntoView = () => {};
+window.HTMLElement.prototype.hasPointerCapture = () => false;
+window.HTMLElement.prototype.setPointerCapture = () => {};
+window.HTMLElement.prototype.releasePointerCapture = () => {};

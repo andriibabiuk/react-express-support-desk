@@ -263,20 +263,62 @@ yet.
 - No create/edit/delete UI on this page — tickets are only ever created via
   email ingestion right now, so there's nothing analogous to `UserDialog`'s
   create mode here.
-- **Sorting** is server-side, not client-side: `GET /api/tickets` takes
-  `sortBy` (one of `subject`, `senderName`, `senderEmail`, `status`,
-  `category`, `createdAt` — validated against that whitelist, falling back to
-  `createdAt` for anything else) and `sortOrder` (`asc`/`desc`, falling back
-  to `desc`), fed straight into Prisma's `orderBy`. `TicketsTable.tsx` uses
-  **`@tanstack/react-table`** (`useReactTable`, `manualSorting: true`,
-  `enableMultiSort: false`) purely as headless column/header-clicking
-  plumbing — it never sorts rows itself; `sorting` (`SortingState`, one
-  entry at most) lives in `useState`, drives the `useQuery` key and the
-  `sortBy`/`sortOrder` params, and the server's response order is rendered
-  as-is via `getCoreRowModel()` (no `getSortedRowModel()`). Column ids are
-  the `Ticket` accessor keys themselves (e.g. `senderName`), so a header
-  click's column id can be passed directly as `sortBy` with no extra mapping
-  layer.
+- **Sorting and filtering are both server-side**, not client-side, validated
+  by the shared `ticketListQuerySchema` in `core/src/schemas/ticket.ts` (not
+  a one-off `req.query` check local to the route, following the
+  [shared-schemas convention](#shared-schemas-live-in-core)) — `server/src/routes/tickets.ts`
+  just does `ticketListQuerySchema.parse(req.query)` and feeds the result
+  straight into Prisma's `where`/`orderBy`. Invalid/missing values never
+  400 — every field gracefully falls back via zod's `.catch()` (sort) or
+  `.optional()` (filters), since this is a list endpoint, not a form
+  submission.
+  - `sortBy` is one of `sortableColumns` (`subject`, `senderName`, `status`,
+    `category`, `createdAt` — deliberately excludes `senderEmail`, falling
+    back to `createdAt` for anything else) and `sortOrder` is `asc`/`desc`
+    (falling back to `desc`). `TicketsTable.tsx` uses
+    **`@tanstack/react-table`** (`useReactTable`, `manualSorting: true`,
+    `enableMultiSort: false`) purely as headless column/header-clicking
+    plumbing — it never sorts rows itself; `sorting` (`SortingState`, one
+    entry at most) lives in `useState`, drives the `useQuery` key and the
+    `sortBy`/`sortOrder` params, and the server's response order is rendered
+    as-is via `getCoreRowModel()` (no `getSortedRowModel()`). Column ids are
+    the `Ticket` accessor keys themselves (e.g. `senderName`), so a header
+    click's column id can be passed directly as `sortBy` with no extra
+    mapping layer, and `senderEmail`'s column has `enableSorting: false` to
+    match it being outside `sortableColumns`.
+  - `status` (one of `statusFilterValues`) and `category` (one of
+    `categoryFilterValues`, which adds a synthetic `'uncategorized'` value on
+    top of the real `TicketCategory` members, mapped to Prisma's
+    `category: null` — there's no such thing as a real "uncategorized"
+    enum member) are both optional and independent — either, both, or
+    neither can be set, combined with `AND` semantics in the `where` clause.
+    Both are deliberately plain string-literal unions in `core`, not the
+    `TicketStatus`/`TicketCategory` **enums** also exported from `core` (see
+    [Never compare roles, ticket categories, or ticket statuses against raw
+    strings](#never-compare-roles-ticket-categories-or-ticket-statuses-against-raw-strings)) —
+    Prisma 7's generated `TicketStatus`/`TicketCategory` types are
+    themselves plain string-literal unions (`type TicketStatus = (typeof
+    TicketStatus)[keyof typeof TicketStatus]`, not a real TS `enum`), so a
+    literal-union filter value assigns straight into a Prisma `where` clause
+    with no cast — a real enum from `core` wouldn't, since two independently
+    declared TS enums with identical string values still aren't assignable
+    to each other. `TicketsTable.tsx` renders these as two shadcn `Select`s
+    (`client/src/components/ui/select.tsx`, added via `bunx shadcn@latest
+    add select` — no prior consumer in this codebase) above the table, with
+    a `'all'` sentinel value mapped to `undefined` before being sent as a
+    query param (Radix `Select.Item` can't take an empty-string `value`, and
+    axios omits `undefined` params from the request entirely).
+  - `search` is free-text, matched with a case-insensitive Prisma `contains`
+    (`mode: 'insensitive'`, which Postgres runs as `ILIKE`) against
+    `subject`, `senderName`, and `senderEmail` (`OR`'d together, then `AND`ed
+    with `status`/`category` if those are also set). The schema trims it and
+    blanks an empty string back to `undefined` so a cleared search box
+    doesn't turn into a `contains: ''` filter. `TicketsTable.tsx` debounces
+    the search `<Input>` by `SEARCH_DEBOUNCE_MS` (300ms, a plain
+    `useState` + `useEffect`/`setTimeout` — no debounce library in this
+    codebase) before it lands in `debouncedSearch`, which is what actually
+    drives the `useQuery` key/params; the raw, undebounced `search` state
+    only drives the input's own `value` so typing itself never stutters.
 
 ## Versions in use
 

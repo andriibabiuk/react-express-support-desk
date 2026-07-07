@@ -1,9 +1,14 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import axios from 'axios';
 import { TicketCategory, TicketStatus } from 'core';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { renderWithQuery } from '../test/utils';
 import { TicketsTable } from './TicketsTable';
+
+function selectOption(triggerName: string, optionName: string) {
+	fireEvent.click(screen.getByRole('combobox', { name: triggerName }));
+	fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
 
 vi.mock('axios', () => ({
 	default: { get: vi.fn() },
@@ -94,5 +99,81 @@ describe('TicketsTable', () => {
 
 		expect(await screen.findByText('Failed to load tickets.')).toBeInTheDocument();
 		expect(screen.queryByRole('table')).not.toBeInTheDocument();
+	});
+
+	it('requests all tickets with no status/category filter by default', async () => {
+		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+
+		renderWithQuery(<TicketsTable />);
+
+		await screen.findByText('Refund question');
+
+		expect(mockedGet).toHaveBeenCalledWith('/api/tickets', {
+			params: { sortBy: 'createdAt', sortOrder: 'desc', status: undefined, category: undefined },
+		});
+	});
+
+	it('refetches with the chosen status when a status filter is selected', async () => {
+		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+
+		renderWithQuery(<TicketsTable />);
+		await screen.findByText('Refund question');
+
+		selectOption('Status', 'Resolved');
+
+		await waitFor(() => {
+			expect(mockedGet).toHaveBeenLastCalledWith('/api/tickets', {
+				params: { sortBy: 'createdAt', sortOrder: 'desc', status: 'resolved', category: undefined },
+			});
+		});
+	});
+
+	it('refetches with the chosen category when a category filter is selected', async () => {
+		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+
+		renderWithQuery(<TicketsTable />);
+		await screen.findByText('Refund question');
+
+		selectOption('Category', 'Uncategorized');
+
+		await waitFor(() => {
+			expect(mockedGet).toHaveBeenLastCalledWith('/api/tickets', {
+				params: {
+					sortBy: 'createdAt',
+					sortOrder: 'desc',
+					status: undefined,
+					category: 'uncategorized',
+				},
+			});
+		});
+	});
+
+	it('debounces the search box before refetching with the typed term', async () => {
+		mockedGet.mockResolvedValue({ data: { tickets: TICKETS } });
+
+		renderWithQuery(<TicketsTable />);
+		await screen.findByText('Refund question');
+
+		fireEvent.change(screen.getByPlaceholderText('Search subject, sender, or email...'), {
+			target: { value: 'refund' },
+		});
+
+		// Not sent immediately — still debouncing.
+		expect(mockedGet).not.toHaveBeenLastCalledWith(
+			'/api/tickets',
+			expect.objectContaining({ params: expect.objectContaining({ search: 'refund' }) }),
+		);
+
+		await waitFor(() => {
+			expect(mockedGet).toHaveBeenLastCalledWith('/api/tickets', {
+				params: {
+					sortBy: 'createdAt',
+					sortOrder: 'desc',
+					status: undefined,
+					category: undefined,
+					search: 'refund',
+				},
+			});
+		});
 	});
 });

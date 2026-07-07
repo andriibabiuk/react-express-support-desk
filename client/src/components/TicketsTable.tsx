@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
 	createColumnHelper,
@@ -9,9 +9,17 @@ import {
 	type Table as ReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { TicketCategory, TicketStatus, type TicketSortField } from 'core';
+import { TicketCategory, TicketStatus, type TicketCategoryFilter, type TicketSortField, type TicketStatusFilter } from 'core';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
 	Table,
@@ -147,16 +155,40 @@ function TicketsTableHeader({ table }: { table: ReactTable<Ticket> }) {
 	);
 }
 
+const ALL = 'all';
+type StatusFilter = TicketStatusFilter | typeof ALL;
+type CategoryFilter = TicketCategoryFilter | typeof ALL;
+
+const SEARCH_DEBOUNCE_MS = 300;
+
 export function TicketsTable() {
 	const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
 	const sortBy = (sorting[0]?.id as TicketSortField | undefined) ?? 'createdAt';
 	const sortOrder = sorting[0]?.desc === false ? 'asc' : 'desc';
 
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL);
+	const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>(ALL);
+
+	const [search, setSearch] = useState('');
+	const [debouncedSearch, setDebouncedSearch] = useState('');
+	useEffect(() => {
+		const timeout = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(timeout);
+	}, [search]);
+
 	const { data, isPending, isError } = useQuery({
-		queryKey: ['tickets', sortBy, sortOrder],
+		queryKey: ['tickets', sortBy, sortOrder, statusFilter, categoryFilter, debouncedSearch],
 		queryFn: () =>
 			axios
-				.get('/api/tickets', { params: { sortBy, sortOrder } })
+				.get('/api/tickets', {
+					params: {
+						sortBy,
+						sortOrder,
+						status: statusFilter === ALL ? undefined : statusFilter,
+						category: categoryFilter === ALL ? undefined : categoryFilter,
+						search: debouncedSearch || undefined,
+					},
+				})
 				.then(res => res.data.tickets as Ticket[]),
 	});
 
@@ -174,8 +206,46 @@ export function TicketsTable() {
 
 	return (
 		<>
+			<div className='mt-4 flex items-center gap-3'>
+				<Input
+					value={search}
+					onChange={e => setSearch(e.target.value)}
+					placeholder='Search subject, sender, or email...'
+					aria-label='Search tickets'
+					className='w-72'
+				/>
+				<Select value={statusFilter} onValueChange={value => setStatusFilter(value as StatusFilter)}>
+					<SelectTrigger size='sm' className='w-40' aria-label='Status'>
+						<SelectValue placeholder='Status' />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value={ALL}>All statuses</SelectItem>
+						<SelectItem value={TicketStatus.open}>{STATUS_LABEL[TicketStatus.open]}</SelectItem>
+						<SelectItem value={TicketStatus.resolved}>{STATUS_LABEL[TicketStatus.resolved]}</SelectItem>
+						<SelectItem value={TicketStatus.closed}>{STATUS_LABEL[TicketStatus.closed]}</SelectItem>
+					</SelectContent>
+				</Select>
+				<Select value={categoryFilter} onValueChange={value => setCategoryFilter(value as CategoryFilter)}>
+					<SelectTrigger size='sm' className='w-48' aria-label='Category'>
+						<SelectValue placeholder='Category' />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value={ALL}>All categories</SelectItem>
+						<SelectItem value={TicketCategory.generalQuestion}>
+							{CATEGORY_LABEL[TicketCategory.generalQuestion]}
+						</SelectItem>
+						<SelectItem value={TicketCategory.technicalQuestion}>
+							{CATEGORY_LABEL[TicketCategory.technicalQuestion]}
+						</SelectItem>
+						<SelectItem value={TicketCategory.refundRequest}>
+							{CATEGORY_LABEL[TicketCategory.refundRequest]}
+						</SelectItem>
+						<SelectItem value='uncategorized'>Uncategorized</SelectItem>
+					</SelectContent>
+				</Select>
+			</div>
 			{isPending && (
-				<Table className='mt-4 table-fixed'>
+				<Table className='mt-3 table-fixed'>
 					<TicketsTableHeader table={table} />
 					<TableBody>
 						{Array.from({ length: SKELETON_ROWS }, (_, i) => (
@@ -205,7 +275,7 @@ export function TicketsTable() {
 			)}
 			{isError && <p className='mt-4 text-sm text-destructive'>Failed to load tickets.</p>}
 			{data && (
-				<Table className='mt-4 table-fixed'>
+				<Table className='mt-3 table-fixed'>
 					<TicketsTableHeader table={table} />
 					<TableBody>
 						{table.getRowModel().rows.map(row => (

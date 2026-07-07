@@ -8,8 +8,12 @@ export {
 	createTicketSchema,
 	type CreateTicketInput,
 	sortableColumns,
+	statusFilterValues,
+	categoryFilterValues,
 	ticketListQuerySchema,
 	type TicketSortField,
+	type TicketStatusFilter,
+	type TicketCategoryFilter,
 	type TicketListQuery,
 } from './schemas/ticket.ts';
 export { Role } from './constants/role.ts';

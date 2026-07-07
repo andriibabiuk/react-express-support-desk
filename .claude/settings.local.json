@@ -40,7 +40,17 @@
       "Skill(run)",
       "Skill(run:*)",
       "Bash(disown)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(curl -s -c cookies5.txt -X POST http://localhost:4000/api/auth/sign-in/email -H 'Content-Type: application/json' -d '{\"email\":\"agent@example.com\",\"password\":\"password123\"}' -o /dev/null -w 'signin: %{http_code}\\\\n')",
+      "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=refund\")",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=MARIA\")",
+      "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=refund&status=open\")",
+      "Bash(curl -s -b cookies5.txt \"http://localhost:4000/api/tickets?search=zzzznonexistent\")",
+      "Bash(rm -f /tmp/cookies5.txt /tmp/server-dev5.log 2>&1)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }
