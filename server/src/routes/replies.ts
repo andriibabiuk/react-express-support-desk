@@ -5,6 +5,14 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 const router = Router({ mergeParams: true });
 
+function textToHtml(text: string): string {
+	const escaped = text
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+	return escaped.replace(/\n/g, '<br>');
+}
+
 router.get<{ id: string }>('/', async (req, res, next) => {
 	try {
 		const ticketId = Number(req.params.id);
@@ -39,6 +47,7 @@ router.post<{ id: string }>('/', async (req, res, next) => {
 		const newReply = await prisma.ticketReply.create({
 			data: {
 				...validation.data,
+				bodyHtml: textToHtml(validation.data.body),
 				ticketId,
 				authorId: req.user.id,
 				senderType: SenderType.agent,

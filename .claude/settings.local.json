@@ -98,7 +98,10 @@
       "Bash(PowerShell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 4000 -ErrorAction SilentlyContinue\")",
       "PowerShell(Get-NetTCPConnection -LocalPort 4000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Get-CimInstance Win32_Process -Filter \"ProcessId=$_\" | Select-Object ProcessId,Name,CommandLine,CreationDate })",
       "PowerShell(Stop-Process -Id 28500 -Force -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-NetTCPConnection -LocalPort 4000 -State Listen -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-NetTCPConnection -LocalPort 4000 -State Listen -ErrorAction SilentlyContinue)",
+      "Bash(git -C d:/workdir/react-express-support-desk diff core/src/schemas/ticket.ts)",
+      "Bash(git stash *)",
+      "Bash(bun remove *)"
     ],
     "additionalDirectories": [
       "\\tmp"

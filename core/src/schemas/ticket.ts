@@ -19,10 +19,24 @@ export interface Ticket {
 }
 
 export const createTicketSchema = z.object({
-	senderEmail: z.email('Enter a valid email address'),
-	senderName: z.string().trim().min(1, 'Sender name is required'),
-	subject: z.string().trim().min(1, 'Subject is required'),
-	body: z.string().trim().min(1, 'Body is required'),
+	senderEmail: z
+		.email('Enter a valid email address')
+		.max(255, 'Sender email address is too long'),
+	senderName: z
+		.string()
+		.trim()
+		.min(1, 'Sender name is required')
+		.max(255, 'Sender name is too long'),
+	subject: z
+		.string()
+		.trim()
+		.min(1, 'Subject is required')
+		.max(1000, 'Subject is too long'),
+	body: z
+		.string()
+		.trim()
+		.min(1, 'Body is required')
+		.max(2000, 'Body is too long'),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;

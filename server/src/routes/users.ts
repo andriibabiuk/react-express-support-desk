@@ -118,10 +118,16 @@ usersRouter.delete<{ id: string }>('/:id', requireAuth, requireAdmin, async (req
 		return;
 	}
 
-	await prisma.user.update({
-		where: { id },
-		data: { deletedAt: new Date() },
-	});
+	await prisma.$transaction([
+		prisma.user.update({
+			where: { id },
+			data: { deletedAt: new Date() },
+		}),
+		prisma.ticket.updateMany({
+			where: { assignedToId: id },
+			data: { assignedToId: null },
+		}),
+	]);
 
 	const ctx = await auth.$context;
 	await ctx.internalAdapter.deleteUserSessions(id);

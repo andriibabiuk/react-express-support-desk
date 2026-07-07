@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { type TicketReply } from 'core';
+import DOMPurify from 'dompurify';
 import { formatDate } from './TicketsTable';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -32,7 +33,16 @@ function ReplyThread({ replies }: { replies: TicketReply[] }) {
 									{formatDate(reply.createdAt)}
 								</p>
 							</div>
-							<div className='mt-2 whitespace-pre-wrap text-sm'>{reply.body}</div>
+							{reply.bodyHtml ? (
+								<div
+									className='mt-2 text-sm'
+									dangerouslySetInnerHTML={{
+										__html: DOMPurify.sanitize(reply.bodyHtml),
+									}}
+								/>
+							) : (
+								<div className='mt-2 whitespace-pre-wrap text-sm'>{reply.body}</div>
+							)}
 						</div>
 					</div>
 				);

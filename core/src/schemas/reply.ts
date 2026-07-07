@@ -9,6 +9,7 @@ export type CreateReplyInput = z.infer<typeof createReplySchema>;
 export interface TicketReply {
 	id: number;
 	body: string;
+	bodyHtml: string | null;
 	author: { id: string; name: string; email: string } | null;
 	createdAt: string;
 }

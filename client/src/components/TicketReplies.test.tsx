@@ -71,6 +71,51 @@ describe('TicketReplies', () => {
 		expect(screen.getByText('Any update?')).toBeInTheDocument();
 	});
 
+	it('renders bodyHtml when present instead of the plain-text body', async () => {
+		mockedGet.mockResolvedValue({
+			data: {
+				replies: [
+					{
+						id: 3,
+						body: 'Line one\nLine two',
+						bodyHtml: 'Line one<br>Line two',
+						author: null,
+						createdAt: '2026-01-18T00:00:00.000Z',
+					},
+				],
+			},
+		});
+
+		const { container } = renderWithQuery(<TicketReplies ticketId={1} />);
+
+		await screen.findByText('Customer');
+		expect(container.querySelector('br')).toBeInTheDocument();
+		expect(container.textContent).toContain('Line oneLine two');
+	});
+
+	it('sanitizes bodyHtml before rendering it', async () => {
+		mockedGet.mockResolvedValue({
+			data: {
+				replies: [
+					{
+						id: 4,
+						body: 'hi',
+						bodyHtml: '<img src=x onerror="alert(1)"><script>alert(1)</script>hi',
+						author: null,
+						createdAt: '2026-01-18T00:00:00.000Z',
+					},
+				],
+			},
+		});
+
+		const { container } = renderWithQuery(<TicketReplies ticketId={1} />);
+
+		await screen.findByText('Customer');
+		expect(container.querySelector('script')).not.toBeInTheDocument();
+		expect(container.querySelector('img')).not.toHaveAttribute('onerror');
+		expect(container.textContent).toContain('hi');
+	});
+
 	it('shows an error message when the request fails', async () => {
 		mockedGet.mockRejectedValue(new Error('network error'));
 
