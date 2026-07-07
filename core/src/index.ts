@@ -25,6 +25,7 @@ export {
 	type TicketListQuery,
 	type TicketSortField,
 	type TicketStatusFilter,
+	type TicketSummaryResponse,
 	type UpdateTicketInput,
 } from './schemas/ticket.ts';
 export {

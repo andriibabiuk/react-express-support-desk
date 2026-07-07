@@ -47,6 +47,7 @@ export function TicketDetailPage() {
 				<div className='mt-4 grid grid-cols-1 gap-6 md:grid-cols-3'>
 					<div className='md:col-span-2'>
 						<TicketDetail
+							ticketId={ticketId}
 							subject={ticket.subject}
 							senderName={ticket.senderName}
 							senderEmail={ticket.senderEmail}

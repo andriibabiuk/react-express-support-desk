@@ -1,7 +1,9 @@
-import { Prisma, Role } from '@prisma/client';
+import { Prisma, Role, SenderType } from '@prisma/client';
+import { generateText } from 'ai';
 import { ticketListQuerySchema, updateTicketSchema } from 'core';
 import { Router } from 'express';
 import { z } from 'zod';
+import { ticketSummaryModel } from '../lib/ai.ts';
 import { prisma } from '../lib/prisma.ts';
 import { repliesRouter } from './replies.ts';
 
@@ -84,6 +86,62 @@ ticketsRouter.get('/:id', async (req, res) => {
 	}
 
 	res.json(ticket);
+});
+
+ticketsRouter.post('/:id/summary', async (req, res) => {
+	const id = Number(req.params.id);
+	if (!Number.isInteger(id)) {
+		res.status(400).json({ error: 'Invalid ticket id' });
+		return;
+	}
+
+	const ticket = await prisma.ticket.findUnique({
+		where: { id },
+		select: { subject: true, body: true, senderName: true },
+	});
+	if (!ticket) {
+		res.status(404).json({ error: 'Ticket not found' });
+		return;
+	}
+
+	const replies = await prisma.ticketReply.findMany({
+		where: { ticketId: id },
+		select: {
+			body: true,
+			senderType: true,
+			author: { select: { name: true } },
+		},
+		orderBy: { createdAt: 'asc' },
+	});
+
+	const conversation = replies
+		.map(reply => {
+			const speaker =
+				reply.senderType === SenderType.agent
+					? (reply.author?.name ?? 'Agent')
+					: ticket.senderName;
+			return `${speaker}: ${reply.body}`;
+		})
+		.join('\n\n');
+
+	const { text } = await generateText({
+		model: ticketSummaryModel,
+		system:
+			'You summarize customer support tickets for agents. Write a concise ' +
+			"summary (2-4 sentences) covering the customer's issue and the " +
+			'current state of the conversation, including any resolution or ' +
+			'next steps discussed. Respond with only the summary text — no ' +
+			'preamble, headings, or bullet points.',
+		prompt:
+			`Ticket subject: ${ticket.subject}\n` +
+			`Customer's name: ${ticket.senderName}\n` +
+			`Customer's original message: ${ticket.body}\n\n` +
+			(conversation
+				? `Conversation so far:\n${conversation}`
+				: 'No replies yet.'),
+	});
+
+	res.json({ summary: text.trim() });
 });
 
 ticketsRouter.use('/:id/replies', repliesRouter);

@@ -109,3 +109,7 @@ export const updateTicketSchema = z.object({
 });
 
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
+
+export interface TicketSummaryResponse {
+	summary: string;
+}
