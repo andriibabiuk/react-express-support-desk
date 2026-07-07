@@ -240,6 +240,30 @@ enough to persist a ticket, not the full CRUD/UI:
   check-then-create isn't atomic (a narrow race window exists under truly
   concurrent duplicate requests).
 
+### Ticket list
+
+`GET /api/tickets` (`server/src/routes/tickets.ts`) lists tickets ordered
+`createdAt: 'desc'` (newest first) — this is the one piece of Phase 4 (Ticket
+CRUD) that exists so far, alongside the ticket creation that already happens
+via [Email ingestion](#email-ingestion). No detail/update/delete/assign
+endpoints yet.
+
+- Unlike `/api/users`, this is gated by `requireAuth` only, **not**
+  `requireAdmin` — per `project-scope.md`, agents (not just admins) need to
+  view tickets. `client/src/pages/TicketsPage.tsx` /
+  `client/src/components/TicketsTable.tsx` follow the same pattern as
+  `UsersPage`/`UsersTable`, and the `/tickets` route in `App.tsx` sits
+  directly under `ProtectedRoute` rather than nested inside `AdminRoute`
+  (contrast `/users`). The "Tickets" link in `NavBar.tsx` is shown
+  unconditionally, unlike the role-gated "Users" link.
+- The list `select`s a subset of `Ticket` columns (no `body` — a list view
+  doesn't need the full email text, only `server/src/routes/emails.ts`'s
+  create path does) and doesn't join the `assignedTo` relation (there's no
+  assignment feature yet to display).
+- No create/edit/delete UI on this page — tickets are only ever created via
+  email ingestion right now, so there's nothing analogous to `UserDialog`'s
+  create mode here.
+
 ## Versions in use
 
 Installed via Bun from npm, not pinned to older training-data defaults:
@@ -250,13 +274,23 @@ majors, so check context7 before assuming v5/v6-era APIs still apply.
 
 ## Testing
 
-E2E tests are Playwright-based (root `playwright.config.ts`, `e2e/` dir) with
-their own isolated test database and ports — separate from normal `bun run
-dev`. Use the **playwright-e2e-tester** agent to write or extend end-to-end
-tests; it already knows the test-environment setup (test DB reset flow,
-dedicated ports, Prisma's AI-consent gate on destructive commands, and this
-environment's headless-browser-hang quirk), so don't duplicate that context
-here — see `.claude/agents/playwright-e2e-tester.md` for the details.
+**Default to component tests.** They're faster, don't need the e2e test
+DB/ports, and cover most of what this app needs — form validation, loading/
+error/success rendering, dialog and interaction behavior, API-shape
+contracts via mocked axios. Reach for an E2E test only when a component test
+genuinely can't prove the thing that matters:
+
+- real cross-page navigation or redirects (e.g. `protected-routes.spec.ts`'s
+  role-gating and sign-out-clears-session checks),
+- actual session/cookie behavior across real requests (not something a
+  mocked `axios` can stand in for),
+- an endpoint with no UI to mount at all (e.g. `e2e/emails.spec.ts` against
+  the webhook — there's no component to render, so a component test isn't
+  an option).
+
+When in doubt, write the component test first and only add an E2E test if
+something about the flow can't be verified that way — don't reach for E2E by
+default just because a feature touches the server.
 
 ### Component tests
 
@@ -285,9 +319,22 @@ environment).
   (pending/success/error states driven by
   `mockReturnValue`/`mockResolvedValue`/`mockRejectedValue`).
 
+### E2E tests
+
+Playwright-based (root `playwright.config.ts`, `e2e/` dir) with their own
+isolated test database and ports — separate from normal `bun run dev`. Use
+the **playwright-e2e-tester** agent to write or extend these; it already
+knows the test-environment setup (test DB reset flow, dedicated ports,
+Prisma's AI-consent gate on destructive commands, and this environment's
+headless-browser-hang quirk), so don't duplicate that context here — see
+`.claude/agents/playwright-e2e-tester.md` for the details. Keep new E2E
+coverage scoped to the cases described above, rather than mirroring
+everything a component test already covers.
+
 ## Not yet implemented
 
-Ticket CRUD (list/detail/update/assign — see [Email ingestion](#email-ingestion)
-for the one thing that does exist: creating a bare `Ticket` row from an
-inbound email), AI features (Claude API), a real email provider, dashboard,
-Docker — see `implementation-plan.md` for the phase breakdown.
+Ticket detail/update/delete/assign/filtering (see [Ticket list](#ticket-list)
+and [Email ingestion](#email-ingestion) for what does exist: a sorted list
+and creating a bare `Ticket` row from an inbound email), AI features (Claude
+API), a real email provider, dashboard, Docker — see
+`implementation-plan.md` for the phase breakdown.

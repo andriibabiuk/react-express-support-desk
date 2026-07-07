@@ -32,6 +32,14 @@ export function NavBar() {
 				<Link to='/' className='font-heading font-medium'>
 						Support Desk
 					</Link>
+				<NavLink
+					to='/tickets'
+					className={({ isActive }) =>
+						`text-sm ${isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`
+					}
+				>
+					Tickets
+				</NavLink>
 				{session?.user.role === Role.admin && (
 					<NavLink
 						to='/users'
