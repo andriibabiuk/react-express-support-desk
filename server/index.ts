@@ -1,3 +1,6 @@
+import './instrument.ts';
+
+import * as Sentry from '@sentry/node';
 import { toNodeHandler } from 'better-auth/node';
 import cors from 'cors';
 import express from 'express';
@@ -51,6 +54,8 @@ app.get('/api/me', requireAuth, (req, res) => {
 app.use('/api/users', usersRouter);
 app.use('/api/tickets', requireAuth, ticketsRouter);
 app.use('/api/emails', ...emailWebhookMiddleware, emailsRouter);
+
+Sentry.setupExpressErrorHandler(app);
 
 await boss.start();
 await registerClassifyTicketWorker();
