@@ -55,7 +55,15 @@
       "Bash(curl -s -b cookies6.txt \"http://localhost:4000/api/tickets?page=999&pageSize=10\")",
       "Bash(curl -s -b cookies6.txt \"http://localhost:4000/api/tickets?status=closed&pageSize=5\")",
       "Bash(curl -s -c cookies7.txt -X POST http://localhost:4000/api/auth/sign-in/email -H 'Content-Type: application/json' -d '{\"email\":\"agent@example.com\",\"password\":\"password123\"}' -o /dev/null -w 'signin: %{http_code}\\\\n')",
-      "Bash(curl -s -b cookies7.txt \"http://localhost:4000/api/tickets\")"
+      "Bash(curl -s -b cookies7.txt \"http://localhost:4000/api/tickets\")",
+      "Bash(grep -Hm1 '^description:' .claude/skills/*/SKILL.md)",
+      "Bash(ls .claude/skills)",
+      "Bash(curl -s -c cookies.txt -X POST http://localhost:5175/api/auth/sign-in/email -H \"Content-Type: application/json\" -d '{\"email\":\"agent@example.com\",\"password\":\"password123\"}')",
+      "Bash(curl -s -b cookies.txt \"http://localhost:5175/api/tickets?pageSize=3\")",
+      "Bash(curl -s -b cookies.txt \"http://localhost:5175/api/tickets/103\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -b cookies.txt \"http://localhost:5175/api/tickets/999999\")",
+      "Bash(curl -s -b cookies.txt \"http://localhost:5175/api/tickets/abc\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5175/tickets/103)"
     ],
     "additionalDirectories": [
       "\\tmp"

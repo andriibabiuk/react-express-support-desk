@@ -1,24 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-	type PaginationState,
-	type SortingState,
-	type Table as ReactTable,
-} from '@tanstack/react-table';
-import axios from 'axios';
-import {
-	defaultPageSize,
-	TicketCategory,
-	TicketStatus,
-	type TicketCategoryFilter,
-	type TicketSortField,
-	type TicketStatusFilter,
-} from 'core';
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +17,28 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
+import { useQuery } from '@tanstack/react-query';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+	type PaginationState,
+	type Table as ReactTable,
+	type SortingState,
+} from '@tanstack/react-table';
+import axios from 'axios';
+import {
+	defaultPageSize,
+	TicketCategory,
+	TicketStatus,
+	type TicketCategoryFilter,
+	type TicketSortField,
+	type TicketStatusFilter,
+} from 'core';
+import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export interface Ticket {
 	id: number;
@@ -66,25 +67,28 @@ const COLUMN_WIDTH: Record<string, string> = {
 
 const TRUNCATE_COLUMNS = new Set(['subject', 'senderName', 'senderEmail']);
 
-const STATUS_BADGE_VARIANT: Record<TicketStatus, 'default' | 'secondary' | 'outline'> = {
+export const STATUS_BADGE_VARIANT: Record<
+	TicketStatus,
+	'default' | 'secondary' | 'outline'
+> = {
 	[TicketStatus.open]: 'default',
 	[TicketStatus.resolved]: 'secondary',
 	[TicketStatus.closed]: 'outline',
 };
 
-const STATUS_LABEL: Record<TicketStatus, string> = {
+export const STATUS_LABEL: Record<TicketStatus, string> = {
 	[TicketStatus.open]: 'Open',
 	[TicketStatus.resolved]: 'Resolved',
 	[TicketStatus.closed]: 'Closed',
 };
 
-const CATEGORY_LABEL: Record<TicketCategory, string> = {
+export const CATEGORY_LABEL: Record<TicketCategory, string> = {
 	[TicketCategory.generalQuestion]: 'General Question',
 	[TicketCategory.technicalQuestion]: 'Technical Question',
 	[TicketCategory.refundRequest]: 'Refund Request',
 };
 
-function formatDate(value: string) {
+export function formatDate(value: string) {
 	return new Date(value).toLocaleDateString(undefined, {
 		year: 'numeric',
 		month: 'short',
@@ -95,13 +99,28 @@ function formatDate(value: string) {
 const columnHelper = createColumnHelper<Ticket>();
 
 const columns = [
-	columnHelper.accessor('subject', { header: 'Subject' }),
+	columnHelper.accessor('subject', {
+		header: 'Subject',
+		cell: info => (
+			<Link
+				to={`/tickets/${info.row.original.id}`}
+				className='link font-medium'
+			>
+				{info.getValue()}
+			</Link>
+		),
+	}),
 	columnHelper.accessor('senderName', { header: 'Sender' }),
-	columnHelper.accessor('senderEmail', { header: 'Email', enableSorting: false }),
+	columnHelper.accessor('senderEmail', {
+		header: 'Email',
+		enableSorting: false,
+	}),
 	columnHelper.accessor('status', {
 		header: 'Status',
 		cell: info => (
-			<Badge variant={STATUS_BADGE_VARIANT[info.getValue()]}>{STATUS_LABEL[info.getValue()]}</Badge>
+			<Badge variant={STATUS_BADGE_VARIANT[info.getValue()]}>
+				{STATUS_LABEL[info.getValue()]}
+			</Badge>
 		),
 	}),
 	columnHelper.accessor('category', {
@@ -150,7 +169,10 @@ function TicketsTableHeader({ table }: { table: ReactTable<Ticket> }) {
 									className='flex items-center gap-1 hover:text-foreground/80'
 									onClick={header.column.getToggleSortingHandler()}
 								>
-									{flexRender(header.column.columnDef.header, header.getContext())}
+									{flexRender(
+										header.column.columnDef.header,
+										header.getContext(),
+									)}
 									<SortIcon direction={header.column.getIsSorted()} />
 								</button>
 							) : (
@@ -171,7 +193,9 @@ type CategoryFilter = TicketCategoryFilter | typeof ALL;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function TicketsTable() {
-	const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
+	const [sorting, setSorting] = useState<SortingState>([
+		{ id: 'createdAt', desc: true },
+	]);
 	const sortBy = (sorting[0]?.id as TicketSortField | undefined) ?? 'createdAt';
 	const sortOrder = sorting[0]?.desc === false ? 'asc' : 'desc';
 
@@ -181,7 +205,10 @@ export function TicketsTable() {
 	const [search, setSearch] = useState('');
 	const [debouncedSearch, setDebouncedSearch] = useState('');
 	useEffect(() => {
-		const timeout = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+		const timeout = setTimeout(
+			() => setDebouncedSearch(search.trim()),
+			SEARCH_DEBOUNCE_MS,
+		);
 		return () => clearTimeout(timeout);
 	}, [search]);
 
@@ -224,7 +251,12 @@ export function TicketsTable() {
 					res =>
 						res.data as {
 							tickets: Ticket[];
-							pagination: { page: number; pageSize: number; total: number; totalPages: number };
+							pagination: {
+								page: number;
+								pageSize: number;
+								total: number;
+								totalPages: number;
+							};
 						},
 				),
 	});
@@ -254,18 +286,30 @@ export function TicketsTable() {
 					aria-label='Search tickets'
 					className='w-72'
 				/>
-				<Select value={statusFilter} onValueChange={value => setStatusFilter(value as StatusFilter)}>
+				<Select
+					value={statusFilter}
+					onValueChange={value => setStatusFilter(value as StatusFilter)}
+				>
 					<SelectTrigger size='sm' className='w-40' aria-label='Status'>
 						<SelectValue placeholder='Status' />
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value={ALL}>All statuses</SelectItem>
-						<SelectItem value={TicketStatus.open}>{STATUS_LABEL[TicketStatus.open]}</SelectItem>
-						<SelectItem value={TicketStatus.resolved}>{STATUS_LABEL[TicketStatus.resolved]}</SelectItem>
-						<SelectItem value={TicketStatus.closed}>{STATUS_LABEL[TicketStatus.closed]}</SelectItem>
+						<SelectItem value={TicketStatus.open}>
+							{STATUS_LABEL[TicketStatus.open]}
+						</SelectItem>
+						<SelectItem value={TicketStatus.resolved}>
+							{STATUS_LABEL[TicketStatus.resolved]}
+						</SelectItem>
+						<SelectItem value={TicketStatus.closed}>
+							{STATUS_LABEL[TicketStatus.closed]}
+						</SelectItem>
 					</SelectContent>
 				</Select>
-				<Select value={categoryFilter} onValueChange={value => setCategoryFilter(value as CategoryFilter)}>
+				<Select
+					value={categoryFilter}
+					onValueChange={value => setCategoryFilter(value as CategoryFilter)}
+				>
 					<SelectTrigger size='sm' className='w-48' aria-label='Category'>
 						<SelectValue placeholder='Category' />
 					</SelectTrigger>
@@ -313,7 +357,9 @@ export function TicketsTable() {
 					</TableBody>
 				</Table>
 			)}
-			{isError && <p className='mt-4 text-sm text-destructive'>Failed to load tickets.</p>}
+			{isError && (
+				<p className='mt-4 text-sm text-destructive'>Failed to load tickets.</p>
+			)}
 			{data && (
 				<Table className='mt-3 table-fixed'>
 					<TicketsTableHeader table={table} />
@@ -323,7 +369,11 @@ export function TicketsTable() {
 								{row.getVisibleCells().map(cell => (
 									<TableCell
 										key={cell.id}
-										className={TRUNCATE_COLUMNS.has(cell.column.id) ? 'truncate' : undefined}
+										className={
+											TRUNCATE_COLUMNS.has(cell.column.id)
+												? 'truncate'
+												: undefined
+										}
 									>
 										{flexRender(cell.column.columnDef.cell, cell.getContext())}
 									</TableCell>
@@ -336,7 +386,8 @@ export function TicketsTable() {
 			{data && (
 				<div className='mt-3 flex items-center justify-between'>
 					<p className='text-sm text-muted-foreground'>
-						{data.pagination.total} ticket{data.pagination.total === 1 ? '' : 's'}
+						{data.pagination.total} ticket
+						{data.pagination.total === 1 ? '' : 's'}
 					</p>
 					<div className='flex items-center gap-2'>
 						<Button
